@@ -4,7 +4,18 @@ A chemistry sandbox that runs in the browser. Add reagents to a beaker, set the
 conditions, and watch what the chemistry actually does — with the molecules
 drawn as three-dimensional stick models built from real structural data.
 
-Open `index.html`. There is no build step and no dependencies.
+**Play it: https://m1omg.github.io/Clemistry/**
+
+Or clone the repository and open `index.html` directly. There is no build step
+and no dependencies.
+
+## Deployment
+
+`.github/workflows/pages.yml` publishes the site to GitHub Pages on every push
+to the default branch. Pages has to be switched on once by hand before the first
+run will succeed — under **Settings → Pages**, set **Source** to
+**GitHub Actions**. The Actions token is not permitted to create the Pages site
+itself, so the workflow cannot do this step for you.
 
 ## What makes it realistic
 
