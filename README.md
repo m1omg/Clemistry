@@ -12,10 +12,13 @@ and no dependencies.
 ## Deployment
 
 `.github/workflows/pages.yml` publishes the site to GitHub Pages on every push
-to the default branch. Pages has to be switched on once by hand before the first
-run will succeed — under **Settings → Pages**, set **Source** to
-**GitHub Actions**. The Actions token is not permitted to create the Pages site
-itself, so the workflow cannot do this step for you.
+to the default branch. There is nothing to build — the repository root is
+uploaded as the Pages artifact exactly as it is.
+
+Pages is already switched on for this repository, with **Settings → Pages →
+Source** set to **GitHub Actions**. That step has to be done by hand once per
+repository: the Actions token may deploy to Pages but is not permitted to create
+the Pages site, so the workflow cannot enable the feature for itself.
 
 ## What makes it realistic
 
