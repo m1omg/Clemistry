@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clemistry — a chemistry sandbox</title>
+<link rel="stylesheet" href="css/app.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚗️</text></svg>">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">⚗</span>
+    <div>
+      <h1>Clemistry</h1>
+      <p>Add reagents, set the conditions, and see what the chemistry actually does.</p>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <button id="btn-help" class="btn ghost">How it works</button>
+    <button id="btn-clear" class="btn danger">Empty vessel</button>
+  </div>
+</header>
+
+<main class="layout">
+
+  <!-- ------------------------------------------------------------ shelf -- -->
+  <aside class="panel shelf">
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-shelf-tab="substances">Substances</button>
+      <button class="tab" data-shelf-tab="elements">Periodic table</button>
+    </div>
+
+    <div class="tab-body" data-shelf-panel="substances">
+      <div class="search-row">
+        <input id="search" type="search" placeholder="Search name or formula…" autocomplete="off">
+      </div>
+      <div id="category-chips" class="chips"></div>
+      <div id="shelf-list" class="shelf-list"></div>
+    </div>
+
+    <div class="tab-body hidden" data-shelf-panel="elements">
+      <div id="periodic-table" class="periodic"></div>
+      <div id="element-detail" class="element-detail">Pick an element to see its properties.</div>
+    </div>
+  </aside>
+
+  <!-- ------------------------------------------------------------ bench -- -->
+  <section class="panel bench">
+    <canvas id="vessel-canvas"></canvas>
+
+    <div class="gauges">
+      <div class="gauge">
+        <span class="gauge-label">Temperature</span>
+        <strong id="gauge-temp">25.0 °C</strong>
+      </div>
+      <div class="gauge">
+        <span class="gauge-label">pH</span>
+        <strong id="gauge-ph">—</strong>
+        <div class="ph-bar"><div id="ph-marker" class="ph-marker"></div></div>
+      </div>
+      <div class="gauge">
+        <span class="gauge-label">Solution</span>
+        <strong id="gauge-volume">0.00 L</strong>
+      </div>
+      <div class="gauge">
+        <span class="gauge-label">Gas evolved</span>
+        <strong id="gauge-gas">0.00 mol</strong>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="control-row">
+        <label for="burner">Burner
+          <output id="burner-value">off</output>
+        </label>
+        <input id="burner" type="range" min="0" max="1200" step="10" value="0">
+      </div>
+      <div class="control-row toggles">
+        <button id="btn-ignite" class="btn accent">Ignite</button>
+        <button id="btn-stir" class="btn toggle">Stir</button>
+        <button id="btn-current" class="btn toggle">Current</button>
+        <button id="btn-light" class="btn toggle">UV lamp</button>
+        <button id="btn-water" class="btn ghost">+1 L water</button>
+      </div>
+    </div>
+
+    <div class="contents">
+      <div class="contents-head">
+        <h2>In the vessel</h2>
+        <span id="contents-count" class="muted"></span>
+      </div>
+      <div id="contents-list" class="contents-list">
+        <p class="empty-note">The vessel is empty. Pick something from the shelf.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- -------------------------------------------------------- inspector -- -->
+  <aside class="panel inspector">
+    <div class="viewer-wrap">
+      <canvas id="viewer-canvas"></canvas>
+      <div class="viewer-badge" id="viewer-badge"></div>
+    </div>
+
+    <div class="viewer-controls">
+      <div class="seg" id="mode-seg">
+        <button class="seg-btn active" data-mode="stick">Stick</button>
+        <button class="seg-btn" data-mode="ballstick">Ball &amp; stick</button>
+        <button class="seg-btn" data-mode="spacefill">Space-fill</button>
+      </div>
+      <div class="viewer-toggles">
+        <label><input type="checkbox" id="opt-h" checked> Hydrogens</label>
+        <label><input type="checkbox" id="opt-labels"> Labels</label>
+        <label><input type="checkbox" id="opt-lp"> Lone pairs</label>
+        <label><input type="checkbox" id="opt-spin" checked> Spin</label>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-info-tab="info">Details</button>
+      <button class="tab" data-info-tab="log">Lab log</button>
+      <button class="tab" data-info-tab="journal">Discoveries <span id="journal-count" class="pill">0</span></button>
+    </div>
+
+    <div class="tab-body info-body" data-info-panel="info">
+      <div id="species-info" class="species-info">
+        <p class="empty-note">Select a substance to see its structure and data.</p>
+      </div>
+    </div>
+    <div class="tab-body info-body hidden" data-info-panel="log">
+      <div id="log-list" class="log-list"></div>
+    </div>
+    <div class="tab-body info-body hidden" data-info-panel="journal">
+      <div id="journal-list" class="journal-list">
+        <p class="empty-note">Reactions you trigger will be recorded here, with an explanation of what happened.</p>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<!-- ------------------------------------------------------------- dialogs -- -->
+<div id="help-modal" class="modal hidden">
+  <div class="modal-card">
+    <h2>How Clemistry works</h2>
+    <p>
+      Everything on the shelf carries real data: a structural formula, a standard
+      enthalpy of formation, a heat capacity, and where relevant an acid
+      dissociation constant or a solubility product.
+    </p>
+    <ul>
+      <li><strong>Structures</strong> are built from the connectivity, not drawn by hand.
+        Each atom is given the shape VSEPR predicts from its steric number, rings are
+        seeded as polygons, and the whole molecule is then relaxed. Water comes out at
+        104.7°, ammonia at 107°, benzene flat with equal bonds.</li>
+      <li><strong>Energy</strong> is never invented. The heat of any reaction is the
+        difference between the enthalpies of formation of its products and its reactants,
+        and that heat goes into the contents according to their heat capacities.</li>
+      <li><strong>Solutions</strong> are modelled as ions. pH comes from solving the
+        electroneutrality condition, so weak acids behave like weak acids; precipitates
+        appear when the ion product passes the solubility product; metals displace each
+        other according to the activity series.</li>
+      <li><strong>Conditions matter.</strong> Some reactions need igniting, some need a
+        catalyst, some need a current or ultraviolet light, and some simply need heat.</li>
+    </ul>
+    <p class="muted">
+      Try: zinc in hydrochloric acid · silver nitrate with sodium chloride ·
+      hydrogen peroxide with manganese dioxide · aluminium with iron(III) oxide, then ignite.
+    </p>
+    <button id="btn-help-close" class="btn accent">Got it</button>
+  </div>
+</div>
+
+<script src="js/data/elements.js"></script>
+<script src="js/chem/structure.js"></script>
+<script src="js/chem/geometry.js"></script>
+<script src="js/data/species.js"></script>
+<script src="js/data/reactions.js"></script>
+<script src="js/render/viewer.js"></script>
+<script src="js/render/vessel.js"></script>
+<script src="js/sim/engine.js"></script>
+<script src="js/ui/app.js"></script>
+</body>
+</html>
