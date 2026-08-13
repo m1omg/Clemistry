@@ -7,6 +7,7 @@
   var Rx = global.Chem.Reactions;
   var St = global.Chem.Structure;
   var fmt = global.Chem.fmtMoles;
+  var U = global.Chem.Units;
 
   var $ = function (sel) { return document.querySelector(sel); };
   var $$ = function (sel) { return Array.prototype.slice.call(document.querySelectorAll(sel)); };
@@ -25,13 +26,39 @@
   var CATEGORY_ORDER = ['all', 'element', 'acid', 'base', 'salt', 'oxide', 'organic',
     'biochem', 'gas', 'oxidiser', 'energetic', 'solvent', 'mineral', 'precipitate', 'catalyst'];
 
-  /* How much of a thing a single click adds. */
-  function defaultAmount(sp) {
-    if (sp.solvent) return 55.5;              /* one litre of water */
-    if (sp.state === 'g') return 1;
-    if (sp.cat === 'ion') return 0.5;
-    if (sp.catalyst) return 0.05;             /* a catalyst is not consumed */
-    return 0.5;
+  /* The amount control: a number plus a unit. "auto" means grams for a solid or
+   * a gas and millilitres for a liquid, which is how you would actually measure
+   * each of them out. */
+  function readAmount(sp) {
+    var value = parseFloat($('#amount').value);
+    if (!(value > 0)) value = 10;
+    var unit = $('#amount-unit').value;
+    if (unit === 'auto') unit = U.inputUnit(sp);
+    return U.toMoles(sp, value, unit);
+  }
+
+  function amountLabel(sp) {
+    var value = parseFloat($('#amount').value);
+    if (!(value > 0)) value = 10;
+    var unit = $('#amount-unit').value;
+    if (unit === 'auto') unit = U.inputUnit(sp);
+    return value + ' ' + unit;
+  }
+
+  function addToVessel(sp) {
+    var amount = readAmount(sp);
+    if (!(amount.moles > 0)) {
+      vessel.emit('add', 'Cannot measure ' + sp.name + ' in those units.');
+      refreshAll();
+      return;
+    }
+    var conc = U.benchConcentration(sp.id);
+    var label = U.describe(sp, amount.moles).primary;
+    if (conc) {
+      label = amountLabel(sp) + ' of ' + conc + ' M solution (' + label + ' of solute)';
+    }
+    vessel.add(sp.id, amount.moles, { water: amount.water, label: label });
+    refreshAll();
   }
 
   /* =========================================================== shelf ==== */
@@ -94,11 +121,10 @@
       var add = document.createElement('button');
       add.className = 'add-btn';
       add.textContent = '+';
-      add.title = 'Add ' + fmt(defaultAmount(sp)) + ' mol';
+      add.title = 'Add ' + amountLabel(sp) + ' of ' + sp.name;
       add.addEventListener('click', function (ev) {
         ev.stopPropagation();
-        vessel.add(sp.id, defaultAmount(sp));
-        refreshAll();
+        addToVessel(sp);
       });
 
       row.appendChild(swatch);
@@ -142,6 +168,9 @@
     var rows = [];
     if (mol) rows.push(['Molar mass', mol.mass.toFixed(2) + ' g/mol']);
     rows.push(['State at 25 °C', stateName(sp.state)]);
+    if (sp.density) rows.push(['Density', sp.density.toFixed(3) + ' g/cm³']);
+    var bench = U.benchConcentration(sp.id);
+    if (bench) rows.push(['Bench solution', bench + ' mol/L']);
     rows.push(['ΔH°f', (sp.approxDHf ? '≈ ' : '') + sp.dHf.toFixed(1) + ' kJ/mol']);
     rows.push(['Cp', sp.cp.toFixed(1) + ' J/(mol·K)']);
     if (sp.mp !== undefined) rows.push(['Melting point', sp.mp + ' °C']);
@@ -309,9 +338,8 @@
     if (btn) {
       btn.addEventListener('click', function () {
         var sp = Sp.get(btn.getAttribute('data-add-element'));
-        vessel.add(sp.id, defaultAmount(sp));
+        addToVessel(sp);
         select(sp.id);
-        refreshAll();
       });
     }
   }
@@ -337,12 +365,17 @@
       var sp = item.species;
       var row = document.createElement('div');
       row.className = 'content-row';
+      var amount = U.describe(sp, item.moles);
+      var detail = amount.secondary;
+      if (item.conc > 0.0005 && sp && (sp.state === 'aq' || sp.cat === 'ion')) {
+        detail = item.conc.toFixed(3) + ' M · ' + detail;
+      }
       row.innerHTML =
         '<span class="content-formula">' + escapeHtml(sp ? sp.formula : item.id) + '</span>' +
         '<span class="state-tag ' + (sp ? sp.state : '') + '">' + (sp ? sp.state : '?') + '</span>' +
         '<span class="content-name">' + escapeHtml(sp ? sp.name : item.id) + '</span>' +
-        '<span class="content-amount">' + fmt(item.moles) + ' mol' +
-          (item.conc > 0.0005 ? ' · ' + item.conc.toFixed(2) + ' M' : '') + '</span>';
+        '<span class="content-amount">' + escapeHtml(amount.primary) +
+          '<em>' + escapeHtml(detail) + '</em></span>';
 
       var rm = document.createElement('button');
       rm.className = 'remove-btn';
@@ -490,9 +523,17 @@
     toggleButton('#btn-light', function (on) { vessel.light = on; });
 
     $('#btn-water').addEventListener('click', function () {
-      vessel.add('water', 55.5);
+      var water = Sp.get('water');
+      var amount = U.toMoles(water, 1000, 'mL');
+      vessel.add('water', amount.moles, { label: '1000 mL' });
       refreshAll();
     });
+
+    /* Keep the "+" tooltips in step with the amount control. */
+    ['#amount', '#amount-unit'].forEach(function (sel) {
+      $(sel).addEventListener('change', renderShelf);
+    });
+    $('#amount').addEventListener('input', renderShelf);
 
     $('#btn-clear').addEventListener('click', function () {
       vessel.clear();

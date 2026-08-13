@@ -53,7 +53,7 @@ because they have no molecules to show.
 standard enthalpies of formation of its products and reactants, and that heat is
 distributed according to the molar heat capacities of everything in the vessel.
 Thermite comes out at −851.5 kJ, methane at −802.5 kJ per mole, glucose at
-−2803 kJ per mole against liquid water. All 58 named reactions are verified
+−2803 kJ per mole against liquid water. All 93 named reactions are verified
 balanced for both mass and charge.
 
 **Solutions are modelled as ions.** Soluble compounds dissociate; weak acids and
@@ -68,12 +68,22 @@ properly:
 | 0.25 M sodium acetate (from titration) | pH 9.17 | ~9.2 |
 | 0.25 M ammonium chloride (from titration) | pH 4.94 | ~4.93 |
 
+**Amounts are measured the way you would measure them.** Solids and gases are
+handled in grams, liquids in millilitres; the simulation converts to moles
+underneath, because that is what stoichiometry needs. Gases also report their
+volume at room temperature, and dissolved species their molarity. Pouring a
+bench reagent brings its water with it — 50 mL of 2 M hydrochloric acid is
+0.1 mol of HCl and 3.1 mol of water, and that dilution shows up in the pH.
+
 **Some chemistry needs no reaction table at all.** Precipitation happens
 whenever an ion product passes the solubility product. Metals displace each
-other and dissolve in acid according to the activity series. Carbonates fizz
-with anything stronger than carbonic acid. Any carbon compound burns, with the
-equation balanced on the fly. So combinations that were never explicitly listed
-still behave correctly.
+other and dissolve in acid according to the activity series. Halogens displace
+each other down group 17, so chlorine drives bromine out of a bromide and
+bromine drives out iodine, while iodine does nothing to either. Basic oxides
+dissolve in acid. Carbonates, sulfides, sulfites and ammonium salts each give up
+their gas to the right reagent. Any carbon compound burns, with the equation
+balanced on the fly. So combinations that were never explicitly listed still
+behave correctly.
 
 **Conditions matter.** Reactions may need igniting, heating past a threshold, a
 catalyst, an electric current, or ultraviolet light. Hydrogen peroxide sits
@@ -92,6 +102,10 @@ chilling the beaker.
 - Sodium in water, and then potassium in water
 - Barium chloride with sulfuric acid — the standard test for sulfate
 - Water with the current on — hydrogen and oxygen in a 2:1 ratio
+- Fluorine in water — it oxidises the water itself and sets the oxygen free
+- Chlorine with potassium iodide, then iodine with potassium bromide (only one of them reacts)
+- Limewater with carbon dioxide — the classic milky test
+- Anhydrous copper sulfate with a few drops of water — white to blue
 
 ## Layout
 
@@ -100,8 +114,9 @@ index.html
 css/app.css
 js/
   data/elements.js     118 elements: masses, electronegativities, radii, CPK colours
-  data/species.js      ~175 substances and aqueous ions with full thermochemistry
-  data/reactions.js    58 named reactions with their conditions
+  data/species.js      194 substances and aqueous ions: thermochemistry, densities
+  chem/units.js        moles / grams / millilitres, and bench-solution strengths
+  data/reactions.js    93 named reactions with their conditions
   chem/structure.js    SMILES parser, kekulization, valence and VSEPR analysis
   chem/geometry.js     3D coordinate generation and relaxation
   render/viewer.js     stick / ball-and-stick / space-filling molecule viewer

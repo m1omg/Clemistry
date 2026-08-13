@@ -311,6 +311,193 @@
       effects: ['colour', 'precipitate'],
       note: 'Pale green iron(II) solutions go cloudy and orange-brown as the air oxidises them.' });
 
+  /* ============================================== reactions of the ions == */
+  /* These are written in terms of the ions themselves, so they fire whichever
+   * salt the ion happened to arrive in. */
+
+  R({ id: 'ammonium-base', name: 'Ammonium salt with alkali', type: 'acid-base',
+      in: { 'nh4+': 1, 'oh-': 1 }, out: { nh4oh: 1, water: 1 }, rate: 9,
+      needs: { water: true },
+      note: 'Any ammonium salt plus any strong alkali releases ammonia. Warm it and the smell alone identifies the ammonium ion.' });
+
+  R({ id: 'ammonia-escape', name: 'Ammonia driven off on warming', type: 'equilibrium',
+      in: { nh4oh: 1 }, out: { nh3: 1 }, minT: 50, rate: 1.5,
+      effects: ['gas', 'smell'],
+      note: 'Ammonia is far less soluble in hot water than cold, so warming the solution drives it out as a gas.' });
+
+  R({ id: 'sulfide-acid', name: 'Sulfide with acid', type: 'gas-forming',
+      in: { 's-2': 1, 'h+': 2 }, out: { h2s: 1 }, rate: 9, needs: { water: true },
+      effects: ['gas', 'fizz', 'smell'],
+      note: 'Acid on any soluble sulfide gives hydrogen sulfide — the rotten-egg smell, and the standard way of making the gas in a laboratory.' });
+
+  R({ id: 'sulfite-acid', name: 'Sulfite with acid', type: 'gas-forming',
+      in: { 'so3-2': 1, 'h+': 2 }, out: { so2: 1, water: 1 }, rate: 9, needs: { water: true },
+      effects: ['gas', 'fizz'],
+      note: 'The sulfite equivalent of the carbonate test: acid drives off sulfur dioxide, sharp and choking.' });
+
+  R({ id: 'nitrite-acid', name: 'Nitrite with acid', type: 'gas-forming',
+      in: { 'no2-': 2, 'h+': 2 }, out: { no: 1, no2: 1, water: 1 }, rate: 6,
+      needs: { water: true }, effects: ['gas', 'colour'],
+      note: 'Nitrous acid is too unstable to keep — it falls apart at once into a mixture of nitrogen oxides.' });
+
+  /* =========================================================== halogens == */
+
+  R({ id: 'f2-water', name: 'Fluorine and water', type: 'redox',
+      in: { f2: 2, water: 2 }, out: { hf_g: 4, o2: 1 }, rate: 50,
+      effects: ['flame', 'gas', 'heat'],
+      note: 'Fluorine is such a strong oxidiser that it takes the electrons off water itself, setting the oxygen free. There is no gentle version of this reaction — it needs no heat, no light and no catalyst.' });
+
+  R({ id: 'f2-h2', name: 'Fluorine and hydrogen', type: 'synthesis',
+      in: { f2: 1, h2: 1 }, out: { hf_g: 2 }, rate: 90,
+      effects: ['explosion', 'flame'],
+      note: 'Combines explosively in the dark at −250 °C. No other pair of elements is so eager.' });
+
+  R({ id: 'cl2-water', name: 'Chlorine in water', type: 'equilibrium',
+      in: { cl2: 1, water: 1 }, out: { hcl: 1, hocl: 1 }, rate: 1.2, reversible: true,
+      effects: ['colour'],
+      note: 'Chlorine disproportionates: one atom is reduced to chloride, the other oxidised to hypochlorite. The hypochlorous acid is what actually sterilises a swimming pool.' });
+
+  R({ id: 'cl2-naoh', name: 'Chlorine and sodium hydroxide', type: 'redox',
+      in: { cl2: 1, naoh: 2 }, out: { nacl: 1, naocl: 1, water: 1 }, rate: 20,
+      effects: ['heat'],
+      note: 'How household bleach is manufactured — chlorine disproportionating again, this time driven to completion by the alkali.' });
+
+  R({ id: 'fe-cl2', name: 'Iron in chlorine', type: 'synthesis',
+      in: { fe: 2, cl2: 3 }, out: { fecl3: 2 }, minT: 200, rate: 8,
+      effects: ['flame', 'smoke'],
+      note: 'Chlorine takes iron all the way to iron(III); hydrochloric acid only manages iron(II). The oxidising agent decides the oxidation state.' });
+
+  /* ====================================================== carbon and metals == */
+
+  R({ id: 'blast-furnace', name: 'Blast furnace', type: 'redox',
+      in: { fe2o3: 1, co: 3 }, out: { fe: 2, co2: 3 }, minT: 700, rate: 3,
+      note: 'Carbon monoxide, made from coke lower down the furnace, is what actually reduces the ore. This single reaction underpins the steel industry.' });
+
+  R({ id: 'cuo-h2', name: 'Reduction of copper oxide by hydrogen', type: 'redox',
+      in: { cuo: 1, h2: 1 }, out: { cu: 1, water: 1 }, minT: 300, rate: 5,
+      effects: ['colour'],
+      note: 'Black copper oxide turns back to pink copper metal as the hydrogen takes its oxygen away.' });
+
+  R({ id: 'cuo-c', name: 'Smelting copper with carbon', type: 'redox',
+      in: { cuo: 2, c: 1 }, out: { cu: 2, co2: 1 }, minT: 800, rate: 3,
+      note: 'The reaction that began the Bronze Age: charcoal pulls the oxygen out of a copper ore.' });
+
+  R({ id: 'water-gas', name: 'Water gas', type: 'redox',
+      in: { c: 1, steam: 1 }, out: { co: 1, h2: 1 }, minT: 1000, rate: 3,
+      effects: ['gas'],
+      note: 'Steam over white-hot coke. Strongly endothermic, so the bed cools and the reaction has to be run in blasts.' });
+
+  R({ id: 'water-gas-shift', name: 'Water-gas shift', type: 'equilibrium',
+      in: { co: 1, steam: 1 }, out: { co2: 1, h2: 1 }, minT: 350, rate: 2, reversible: true,
+      note: 'Upgrades carbon monoxide to hydrogen. It is how most industrial hydrogen is made.' });
+
+  R({ id: 'steam-reforming', name: 'Steam reforming of methane', type: 'redox',
+      in: { ch4: 1, steam: 1 }, out: { co: 1, h2: 3 }, minT: 700, needs: { catalyst: 'ni' }, rate: 2,
+      effects: ['gas'],
+      note: 'Natural gas plus steam over nickel. Most of the world’s hydrogen — and therefore most of its ammonia — starts here.' });
+
+  R({ id: 'methanol-synthesis', name: 'Methanol synthesis', type: 'synthesis',
+      in: { co: 1, h2: 2 }, out: { ch3oh: 1 }, minT: 250, needs: { catalyst: 'cuo' }, rate: 1.5,
+      reversible: true,
+      note: 'Carbon monoxide and hydrogen over a copper catalyst under pressure.' });
+
+  /* ====================================================== sulfur chemistry == */
+
+  R({ id: 'fe-s', name: 'Iron and sulfur', type: 'synthesis',
+      in: { fe: 8, s8: 1 }, out: { fes: 8 }, minT: 250, needs: { ignite: true }, rate: 6,
+      effects: ['flame', 'brightLight'],
+      note: 'Once started, the mixture glows its own way through the tube. The grey solid is a compound, not a mixture — a magnet no longer picks the iron out.' });
+
+  R({ id: 'zn-s', name: 'Zinc and sulfur', type: 'synthesis',
+      in: { zn: 8, s8: 1 }, out: { zns: 8 }, needs: { ignite: true }, minT: 200, rate: 12,
+      effects: ['flame', 'brightLight', 'smoke'],
+      note: 'Goes off with a bang and a cloud of white smoke.' });
+
+  R({ id: 'h2s-o2', name: 'Burning hydrogen sulfide', type: 'combustion',
+      in: { h2s: 2, o2: 3 }, out: { so2: 2, steam: 2 }, needs: { ignite: true }, rate: 10,
+      effects: ['flame'],
+      note: 'Burns with a blue flame to sulfur dioxide — trading one bad smell for another.' });
+
+  R({ id: 'so2-water', name: 'Sulfur dioxide in water', type: 'equilibrium',
+      in: { so2: 1, water: 1 }, out: { h2so3: 1 }, rate: 2, reversible: true,
+      note: 'Sulfurous acid, and half the story of acid rain. The other half is the sulfur trioxide that follows.' });
+
+  /* ===================================================== nitrogen chemistry == */
+
+  R({ id: 'ostwald', name: 'Ostwald process', type: 'redox',
+      in: { nh3: 4, o2: 5 }, out: { no: 4, steam: 6 }, minT: 800,
+      needs: { catalyst: 'pt' }, rate: 4, effects: ['gas'],
+      note: 'Ammonia burnt over platinum gauze at 900 °C. Without the catalyst it would simply burn to nitrogen; with it, the first step to nitric acid.' });
+
+  R({ id: 'nh3-o2', name: 'Burning ammonia', type: 'combustion',
+      in: { nh3: 4, o2: 3 }, out: { n2: 2, steam: 6 }, needs: { ignite: true }, rate: 6,
+      effects: ['flame'],
+      note: 'Left to itself ammonia burns to harmless nitrogen. Only a catalyst diverts it to nitric oxide.' });
+
+  R({ id: 'no2-water', name: 'Nitrogen dioxide in water', type: 'redox',
+      in: { no2: 3, water: 1 }, out: { hno3: 2, no: 1 }, rate: 6,
+      effects: ['gas'],
+      note: 'The last step of the Ostwald process — and the reason nitrogen oxides in the air come back down as acid rain.' });
+
+  R({ id: 'kno3-decomp', name: 'Potassium nitrate on heating', type: 'decomposition',
+      in: { kno3: 2 }, out: { kno2: 2, o2: 1 }, minT: 400, rate: 3,
+      effects: ['gas'],
+      note: 'Nitrates give up oxygen when heated. That is exactly what makes saltpetre useful in gunpowder.' });
+
+  R({ id: 'cuno32-decomp', name: 'Copper nitrate on heating', type: 'decomposition',
+      in: { cuno32: 2 }, out: { cuo: 2, no2: 4, o2: 1 }, minT: 170, rate: 4,
+      effects: ['gas', 'colour', 'smoke'],
+      note: 'Heavy-metal nitrates go all the way to the oxide, throwing off brown nitrogen dioxide as they do.' });
+
+  /* ================================================ carbonates and hydroxides == */
+
+  R({ id: 'limewater', name: 'Limewater test', type: 'precipitation',
+      in: { caoh2: 1, co2: 1 }, out: { caco3: 1, water: 1 }, rate: 14,
+      needs: { water: true }, effects: ['precipitate'],
+      note: 'Limewater turns milky. It is the standard test for carbon dioxide, and it works because calcium carbonate is so nearly insoluble.' });
+
+  R({ id: 'naoh-co2', name: 'Sodium hydroxide absorbing carbon dioxide', type: 'synthesis',
+      in: { naoh: 2, co2: 1 }, out: { na2co3: 1, water: 1 }, rate: 8,
+      note: 'Why bottles of sodium hydroxide grow a crust if left open, and how carbon dioxide is scrubbed from air.' });
+
+  R({ id: 'cave', name: 'Limestone dissolving in carbonated water', type: 'equilibrium',
+      in: { caco3: 1, co2: 1, water: 1 }, out: { cahco32: 1 }, rate: 1.2, reversible: true,
+      needs: { water: true },
+      note: 'Rainwater carrying dissolved CO₂ eats limestone away as soluble bicarbonate. Where the water evaporates the reaction runs backwards, and that is a stalactite.' });
+
+  R({ id: 'cuoh2-decomp', name: 'Copper hydroxide on heating', type: 'decomposition',
+      in: { cuoh2: 1 }, out: { cuo: 1, water: 1 }, minT: 80, rate: 5,
+      effects: ['colour'],
+      note: 'The pale blue gel turns black as it loses water — a striking colour change for so gentle a heat.' });
+
+  R({ id: 'feoh3-decomp', name: 'Iron(III) hydroxide on heating', type: 'decomposition',
+      in: { feoh3: 2 }, out: { fe2o3: 1, water: 3 }, minT: 200, rate: 4,
+      effects: ['colour'],
+      note: 'Dries out to ordinary red iron(III) oxide.' });
+
+  R({ id: 'mgoh2-decomp', name: 'Magnesium hydroxide on heating', type: 'decomposition',
+      in: { mgoh2: 1 }, out: { mgo: 1, water: 1 }, minT: 330, rate: 4,
+      note: 'The reaction behind magnesium hydroxide’s use as a flame retardant: it absorbs heat and releases steam.' });
+
+  /* ============================================================= hydrates == */
+
+  R({ id: 'cuso4-dehydrate', name: 'Driving off water of crystallisation', type: 'decomposition',
+      in: { cuso4_5h2o: 1 }, out: { cuso4: 1, steam: 5 }, minT: 110, rate: 3,
+      effects: ['colour', 'steam'],
+      note: 'Blue crystals crumble to a white powder as the five waters are driven off.' });
+
+  R({ id: 'cuso4-hydrate', name: 'Testing for water', type: 'synthesis',
+      in: { cuso4: 1, water: 5 }, out: { cuso4_5h2o: 1 }, maxT: 100, rate: 10,
+      effects: ['colour', 'heat'],
+      note: 'White anhydrous copper sulfate turning blue is the classic test for the presence of water.' });
+
+  /* ============================================================= biology == */
+
+  R({ id: 'photosynthesis', name: 'Photosynthesis', type: 'redox',
+      in: { co2: 6, water: 6 }, out: { glucose: 1, o2: 6 }, needs: { light: true }, rate: 0.35,
+      effects: ['gas'],
+      note: 'Endothermic by 2803 kJ per mole of glucose, and the light supplies every joule of it. Every other reaction in this list is ultimately paid for by this one.' });
+
   global.Chem.Reactions = {
     all: LIST,
     byId: LIST.reduce(function (m, r) { m[r.id] = r; return m; }, {})

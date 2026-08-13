@@ -100,11 +100,20 @@
     this.peakT = AMBIENT_K;
   };
 
-  Vessel.prototype.add = function (id, moles) {
+  /* `water` lets a bench solution bring its solvent along: pouring 50 mL of
+   * dilute acid adds mostly water, and that dilution matters to the pH. */
+  Vessel.prototype.add = function (id, moles, options) {
     var sp = Sp.get(id);
-    if (!sp) return;
+    if (!sp || !(moles > 0)) return;
+    options = options || {};
     this.amounts[id] = (this.amounts[id] || 0) + moles;
-    this.emit('add', sp.name + ' — ' + fmt(moles) + ' mol added', { species: id });
+    if (options.water > 0 && id !== 'water') {
+      this.amounts.water = (this.amounts.water || 0) + options.water;
+    }
+    var U = global.Chem.Units;
+    var label = options.label ||
+      (U ? U.describe(sp, moles).primary : fmt(moles) + ' mol');
+    this.emit('add', sp.name + ' — ' + label + ' added', { species: id });
   };
 
   Vessel.prototype.remove = function (id, moles) {
@@ -446,6 +455,84 @@
     });
   };
 
+  /* A halogen displaces the halide of any halogen below it in the group:
+   * chlorine drives bromine out of a bromide, bromine drives out iodine, and
+   * fluorine drives out all of them. */
+  Vessel.prototype._halogenDisplacement = function (dt) {
+    if (this.waterLitres() < 1e-6) return;
+    var self = this;
+    var series = Sp.halogens;
+
+    series.forEach(function (strong, si) {
+      if (self.moles(strong.id) < 1e-12) return;
+      series.slice(si + 1).forEach(function (weak) {
+        var halide = self.moles(weak.ion);
+        if (halide < 1e-12 || self.moles(strong.id) < 1e-12) return;
+
+        /* X2 + 2Y- -> 2X- + Y2 */
+        var extent = Math.min(self.moles(strong.id), halide / 2) * Math.min(1, 4 * dt);
+        if (extent < 1e-12) return;
+
+        self.amounts[strong.id] -= extent;
+        self.amounts[weak.ion] -= extent * 2;
+        self.amounts[strong.ion] = (self.amounts[strong.ion] || 0) + extent * 2;
+        self.amounts[weak.id] = (self.amounts[weak.id] || 0) + extent;
+        cleanup(self.amounts);
+
+        var dh = (Sp.get(strong.ion).dHf * 2 + Sp.get(weak.id).dHf) -
+          (Sp.get(strong.id).dHf + Sp.get(weak.ion).dHf * 2);
+        self.addHeat(-dh * extent);
+        self.emitEffect('colour');
+        self.discover('halogen-' + strong.id + '-' + weak.id,
+          strong.name.charAt(0).toUpperCase() + strong.name.slice(1) + ' displaces ' + weak.name,
+          'Oxidising power falls down group 17, so ' + strong.name + ' takes the electrons off ' +
+          weak.name + '’s ions and sets the free halogen loose: ' +
+          Sp.get(strong.id).formula + ' + 2' + Sp.get(weak.ion).formula + ' → 2' +
+          Sp.get(strong.ion).formula + ' + ' + Sp.get(weak.id).formula + '.');
+      });
+    });
+  };
+
+  /* A basic oxide is neutralised by acid just as a hydroxide is, giving the
+   * salt and water. Keyed by what each oxide breaks into. */
+  var BASIC_OXIDES = {
+    cao: { cation: 'ca+2', metals: 1, oxygens: 1 },
+    mgo: { cation: 'mg+2', metals: 1, oxygens: 1 },
+    cuo: { cation: 'cu+2', metals: 1, oxygens: 1 },
+    fe2o3: { cation: 'fe+3', metals: 2, oxygens: 3 },
+    al2o3: { cation: 'al+3', metals: 2, oxygens: 3 }
+  };
+
+  Vessel.prototype._basicOxideAcid = function (dt) {
+    if (this.waterLitres() < 1e-6) return;
+    var self = this;
+    Object.keys(BASIC_OXIDES).forEach(function (id) {
+      var info = BASIC_OXIDES[id];
+      var oxide = self.moles(id), h = self.moles('h+');
+      if (oxide < 1e-12 || h < 1e-12) return;
+
+      /* MxOy + 2y H+ -> x M(n+) + y H2O */
+      var protons = 2 * info.oxygens;
+      var extent = Math.min(oxide, h / protons) * Math.min(1, 3 * dt);
+      if (extent < 1e-12) return;
+
+      self.amounts[id] -= extent;
+      self.amounts['h+'] -= extent * protons;
+      self.amounts[info.cation] = (self.amounts[info.cation] || 0) + extent * info.metals;
+      self.amounts.water = (self.amounts.water || 0) + extent * info.oxygens;
+      cleanup(self.amounts);
+
+      var dh = (Sp.get(info.cation).dHf * info.metals + Sp.get('water').dHf * info.oxygens) -
+        Sp.get(id).dHf;
+      self.addHeat(-dh * extent);
+      self.emitEffect('colour');
+      self.discover('oxide-acid-' + id, Sp.get(id).name + ' dissolving in acid',
+        'A metal oxide is a base even without any hydroxide in it: ' + Sp.get(id).formula +
+        ' + ' + protons + 'H⁺ → ' + info.metals + Sp.get(info.cation).formula + ' + ' +
+        info.oxygens + 'H₂O. This is how an insoluble ore is got into solution.');
+    });
+  };
+
   /* Metals above hydrogen dissolve in acid; metals displace less reactive ions. */
   Vessel.prototype._displace = function (dt) {
     var self = this;
@@ -524,7 +611,10 @@
       if (!sp || sp.cat === 'ion' || sp.noStructure) return;
       var counts = atomsOf(id);
       var c = counts.C || 0, hAt = counts.H || 0, o = counts.O || 0, s = counts.S || 0, n = counts.N || 0;
-      if (!c && !hAt) return;
+      /* This generic path is for carbon compounds. Everything else that burns —
+       * hydrogen, sulfur, phosphorus, the metals — has its own reaction, and
+       * without this guard already-oxidised molecules like HF would "burn" too. */
+      if (!c) return;
       if (sp.cat === 'oxide' || sp.cat === 'salt' || sp.cat === 'precipitate') return;
 
       var o2Need = (2 * c + hAt / 2 + 2 * s - o) / 2;
@@ -602,9 +692,12 @@
       });
       cleanup(self.amounts);
 
-      /* An electrolysis is driven by the power supply, not by the solution's own
-       * heat — it must not chill the beaker to pay for itself. */
-      if (!(r.needs && r.needs.electricity)) self.addHeat(-enthalpyOf(r) * extent);
+      /* An electrolysis or a photochemical reaction is paid for by the power
+       * supply or the lamp, not out of the vessel's own heat — it must not
+       * chill the beaker to fund itself. Exothermic ones still warm it. */
+      var dH = enthalpyOf(r);
+      var externallyPowered = r.needs && (r.needs.electricity || r.needs.light);
+      if (!(externallyPowered && dH > 0)) self.addHeat(-dH * extent);
       r.effects.forEach(function (fx) { self.emitEffect(fx); });
       if (r.effects.indexOf('explosion') >= 0 && extent > 0.02) self.exploded = true;
 
@@ -729,6 +822,8 @@
     this._weakNeutralisation(dt);
     this._carbonateAcid(dt);
     this._precipitate(dt);
+    this._halogenDisplacement(dt);
+    this._basicOxideAcid(dt);
     this._displace(dt);
     this._phases(dt);
     this.computePH();

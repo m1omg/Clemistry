@@ -36,6 +36,17 @@
       <div class="search-row">
         <input id="search" type="search" placeholder="Search name or formula…" autocomplete="off">
       </div>
+      <div class="amount-row">
+        <label for="amount">Add</label>
+        <input id="amount" type="number" min="0" step="any" value="10">
+        <select id="amount-unit">
+          <option value="auto" selected>auto (g / mL)</option>
+          <option value="g">grams</option>
+          <option value="mL">millilitres</option>
+          <option value="L">litres (gas)</option>
+          <option value="mol">moles</option>
+        </select>
+      </div>
       <div id="category-chips" class="chips"></div>
       <div id="shelf-list" class="shelf-list"></div>
     </div>
@@ -177,6 +188,7 @@
 <script src="js/chem/geometry.js"></script>
 <script src="js/data/species.js"></script>
 <script src="js/data/reactions.js"></script>
+<script src="js/chem/units.js"></script>
 <script src="js/render/viewer.js"></script>
 <script src="js/render/vessel.js"></script>
 <script src="js/sim/engine.js"></script>

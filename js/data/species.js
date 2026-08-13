@@ -482,6 +482,57 @@
       dHf: 12.5, cp: 185.8, bp: 210.9, hazards: ['toxic'],
       desc: 'Made by nitrating benzene with a mixture of nitric and sulfuric acid. Smells of almonds and is absorbed straight through skin.' });
 
+  /* ================================================ halogens and their salts == */
+
+  S({ id: 'hf_g', name: 'Hydrogen fluoride', formula: 'HF', smiles: 'F', state: 'g', cat: 'gas',
+      dHf: -273.3, cp: 29.1, bp: 19.5, hazards: ['corrosive', 'toxic'],
+      desc: 'Hydrogen-bonds so strongly that it boils 100 °C higher than HCl despite being lighter.' });
+  S({ id: 'hi', name: 'Hydroiodic acid', formula: 'HI', smiles: 'I', state: 'aq', cat: 'acid',
+      dHf: -55.2, cp: 100, pKa: -10, strongAcid: true, ions: { 'h+': 1, 'i-': 1 }, hazards: ['corrosive'],
+      desc: 'The strongest of the common hydrohalic acids — the H–I bond is the longest and weakest.' });
+  S({ id: 'hocl', name: 'Hypochlorous acid', formula: 'HOCl', smiles: 'OCl', state: 'aq', cat: 'acid',
+      dHf: -120.9, cp: 100, pKa: 7.53, ions: { 'h+': 1, 'ocl-': 1 }, hazards: ['oxidiser'],
+      desc: 'The species that actually does the disinfecting in chlorinated water. Weak as an acid, strong as an oxidiser.' });
+  S({ id: 'nabr', name: 'Sodium bromide', formula: 'NaBr', smiles: '[Na+].[Br-]', state: 's', cat: 'salt',
+      lattice: 'rocksalt', dHf: -361.1, cp: 51.4, ions: { 'na+': 1, 'br-': 1 },
+      desc: 'A rock-salt structure like table salt, and the usual laboratory source of bromide.' });
+  S({ id: 'nai', name: 'Sodium iodide', formula: 'NaI', smiles: '[Na+].[I-]', state: 's', cat: 'salt',
+      lattice: 'rocksalt', dHf: -287.8, cp: 52.1, ions: { 'na+': 1, 'i-': 1 },
+      desc: 'Very soluble, and slowly turns yellow in air as traces of iodide are oxidised to iodine.' });
+  S({ id: 'kbr', name: 'Potassium bromide', formula: 'KBr', smiles: '[K+].[Br-]', state: 's', cat: 'salt',
+      lattice: 'rocksalt', dHf: -393.8, cp: 52.3, ions: { 'k+': 1, 'br-': 1 },
+      desc: 'Transparent well into the infrared, which is why spectroscopists press their samples into discs of it.' });
+  S({ id: 'caf2', name: 'Calcium fluoride', formula: 'CaF₂', smiles: '[Ca+2].[F-].[F-]', state: 's', cat: 'mineral',
+      dHf: -1228.0, cp: 67.0, ksp: 3.9e-11, insoluble: true, color: '#e8eef2',
+      desc: 'Fluorite. The mineral that gave fluorescence its name, and the source of nearly all fluorine chemistry.' });
+
+  /* ============================================== sulfur and nitrogen salts == */
+
+  S({ id: 'h2so3', name: 'Sulfurous acid', formula: 'H₂SO₃', smiles: 'OS(=O)O', state: 'aq', cat: 'acid',
+      dHf: -608.8, cp: 100, pKa: 1.86, protons: 2, ions: { 'h+': 1, 'hso3-': 1 }, hazards: ['corrosive'],
+      desc: 'What sulfur dioxide becomes in water, and one half of why coal smoke makes acid rain.' });
+  S({ id: 'na2so3', name: 'Sodium sulfite', formula: 'Na₂SO₃', smiles: '[Na+].[Na+].[O-]S(=O)[O-]', state: 's', cat: 'salt',
+      dHf: -1100.8, cp: 120.3, ions: { 'na+': 2, 'so3-2': 1 },
+      desc: 'A reducing agent and oxygen scavenger; the preservative that makes some wines smell of struck matches.' });
+  S({ id: 'na2s', name: 'Sodium sulfide', formula: 'Na₂S', smiles: '[Na+].[Na+].[S-2]', state: 's', cat: 'salt',
+      dHf: -364.8, cp: 97.0, ions: { 'na+': 2, 's-2': 1 }, hazards: ['corrosive'],
+      desc: 'Its solutions smell of rotten eggs, because sulfide pulls protons off water to make H₂S.' });
+  S({ id: 'fes', name: 'Iron(II) sulfide', formula: 'FeS', smiles: '[Fe+2].[S-2]', state: 's', cat: 'precipitate',
+      dHf: -100.0, cp: 50.5, ksp: 6.0e-19, color: '#1c1c22', insoluble: true,
+      desc: 'The black solid made by heating iron with sulfur, and the classic laboratory source of hydrogen sulfide.' });
+  S({ id: 'zns', name: 'Zinc sulfide', formula: 'ZnS', smiles: '[Zn+2].[S-2]', state: 's', cat: 'precipitate',
+      dHf: -206.0, cp: 45.8, ksp: 2.0e-25, color: '#f4f4ee', insoluble: true,
+      desc: 'Sphalerite. Glows when struck by radiation — Rutherford counted alpha particles by watching it flash.' });
+  S({ id: 'cus', name: 'Copper(II) sulfide', formula: 'CuS', smiles: '[Cu+2].[S-2]', state: 's', cat: 'precipitate',
+      dHf: -53.1, cp: 47.8, ksp: 6.0e-37, color: '#0d0d10', insoluble: true,
+      desc: 'So insoluble it precipitates from acidic solution, which is what separates copper from most other metals in analysis.' });
+  S({ id: 'kno2', name: 'Potassium nitrite', formula: 'KNO₂', smiles: '[K+].[O-]N=O', state: 's', cat: 'salt',
+      dHf: -369.8, cp: 107.4, ions: { 'k+': 1, 'no2-': 1 }, hazards: ['oxidiser', 'toxic'],
+      desc: 'What potassium nitrate leaves behind when it gives up an oxygen on heating.' });
+  S({ id: 'cahco32', name: 'Calcium bicarbonate', formula: 'Ca(HCO₃)₂', smiles: '[Ca+2].OC(=O)[O-].OC(=O)[O-]',
+      state: 'aq', cat: 'salt', dHf: -1925.6, cp: 200, ions: { 'ca+2': 1, 'hco3-': 2 },
+      desc: 'Only ever exists in solution. It is temporary hardness in water, and the reason limestone caves have stalactites.' });
+
   /* ============================================================ aqueous ions == */
 
   function ION(id, name, formula, smiles, charge, dHf, opts) {
@@ -526,6 +577,9 @@
   ION('clo3-', 'Chlorate ion', 'ClO₃⁻', '[O-]Cl(=O)=O', -1, -104.0);
   ION('ocl-', 'Hypochlorite ion', 'ClO⁻', '[O-]Cl', -1, -107.1);
   ION('s-2', 'Sulfide ion', 'S²⁻', '[S-2]', -2, 33.1);
+  ION('no2-', 'Nitrite ion', 'NO₂⁻', '[O-]N=O', -1, -104.6, { desc: 'Bent, unlike the flat trigonal nitrate — the nitrogen keeps a lone pair.' });
+  ION('so3-2', 'Sulfite ion', 'SO₃²⁻', '[O-]S(=O)[O-]', -2, -635.5, { desc: 'Trigonal pyramidal, and readily oxidised on to sulfate.' });
+  ION('hso3-', 'Bisulfite ion', 'HSO₃⁻', 'OS(=O)[O-]', -1, -626.2);
 
   /* Which cation/anion pairs come out of solution, and as what. */
   var PRECIPITATES = [
@@ -539,7 +593,20 @@
     { cation: 'cu+2', anion: 'oh-', solid: 'cuoh2' },
     { cation: 'fe+3', anion: 'oh-', solid: 'feoh3' },
     { cation: 'mg+2', anion: 'oh-', solid: 'mgoh2' },
-    { cation: 'ca+2', anion: 'oh-', solid: 'caoh2' }
+    { cation: 'ca+2', anion: 'oh-', solid: 'caoh2' },
+    { cation: 'fe+2', anion: 's-2', solid: 'fes' },
+    { cation: 'zn+2', anion: 's-2', solid: 'zns' },
+    { cation: 'cu+2', anion: 's-2', solid: 'cus' },
+    { cation: 'ca+2', anion: 'f-', solid: 'caf2' }
+  ];
+
+  /* Halogens in order of oxidising power. Any of them displaces the halides of
+   * everything below it: Cl2 + 2Br- -> 2Cl- + Br2, and so on down. */
+  var HALOGENS = [
+    { id: 'f2', ion: 'f-', name: 'fluorine' },
+    { id: 'cl2', ion: 'cl-', name: 'chlorine' },
+    { id: 'br2', ion: 'br-', name: 'bromine' },
+    { id: 'i2', ion: 'i-', name: 'iodine' }
   ];
 
   /* Standard reduction-potential ordering, most reactive metal first. A metal
@@ -555,8 +622,50 @@
     'cu+2': { colour: '#3ddad7', label: 'blue-green' }
   };
 
+  /* Densities in g/cm³ at room temperature, so amounts can be shown as grams for
+   * solids and as millilitres for liquids. Aqueous reagents carry the density of
+   * the bench solution rather than of the pure substance. Gases are not listed —
+   * their volume comes from the ideal gas law instead. */
+  var DENSITY = {
+    water: 1.000, ice: 0.917, h2o2: 1.450, br2: 3.102, hg: 13.534,
+    h2so4: 1.831, hno3: 1.513, hcl: 1.180, hbr: 1.490, hi: 1.700, hf: 1.150,
+    h3po4: 1.685, ch3cooh: 1.049, hcooh: 1.220, citric: 1.665, h2co3: 1.000,
+    h2so3: 1.030, hocl: 1.000, naocl: 1.110, nh4oh: 0.910, cahco32: 1.000,
+    hcn: 0.687, ch3oh: 0.792, c2h5oh: 0.789, propanol: 0.786, glycol: 1.113,
+    acetone: 0.784, benzene: 0.876, toluene: 0.867, ccl4: 1.594, chcl3: 1.489,
+    c8h18: 0.703, ethylacetate: 0.902, nitrobenzene: 1.199, nitroglycerin: 1.600,
+
+    li: 0.534, na: 0.968, k: 0.862, mg: 1.738, ca: 1.550, al: 2.700,
+    fe: 7.874, cu: 8.960, zn: 7.140, ag: 10.490, au: 19.300, pb: 11.340,
+    ni: 8.908, pt: 21.450, c: 2.267, diamond: 3.510, si: 2.329,
+    s8: 2.070, p4: 1.823, i2: 4.930,
+
+    nacl: 2.165, kcl: 1.984, nabr: 3.210, nai: 3.670, kbr: 2.750, ki: 3.120,
+    kno3: 2.110, nano3: 2.257, kno2: 1.915, caco3: 2.711, caso4: 2.960,
+    cacl2: 2.150, mgcl2: 2.325, zncl2: 2.907, bacl2: 3.856, caf2: 3.180,
+    cuso4: 3.600, cuso4_5h2o: 2.286, feso4: 2.840, fecl3: 2.900,
+    agno3: 4.350, agcl: 5.560, agbr: 6.473, agi: 5.675, baso4: 4.490,
+    pbi2: 6.160, pbno32: 4.530, cuno32: 3.050,
+    nh4cl: 1.527, nh4no3: 1.725, nh4clo4: 1.950,
+    kmno4: 2.703, k2cr2o7: 2.676, kclo3: 2.340,
+    znso4: 3.540, na2so4: 2.664, mgso4: 2.660, na2so3: 2.633, na2s: 1.856,
+    fes: 4.840, zns: 4.090, cus: 4.760,
+    naoh: 2.130, koh: 2.120, caoh2: 2.211, lioh: 1.460, mgoh2: 2.345,
+    cuoh2: 3.368, feoh3: 4.250, nahco3: 2.200, na2co3: 2.540,
+    cao: 3.340, mgo: 3.580, fe2o3: 5.242, cuo: 6.315, al2o3: 3.950,
+    sio2: 2.650, mno2: 5.026, v2o5: 3.357, p4o10: 2.390,
+    glucose: 1.540, sucrose: 1.587, glycine: 1.607, caffeine: 1.230,
+    aspirin: 1.400, urea: 1.320, c6h5cooh: 1.266, phenol: 1.070,
+    naphthalene: 1.140, tnt: 1.654, nan3: 1.846, cac2: 2.220, yeast: 1.000
+  };
+
+  LIST.forEach(function (sp) {
+    if (DENSITY[sp.id] !== undefined) sp.density = DENSITY[sp.id];
+  });
+
   global.Chem.Species = {
     all: LIST,
+    halogens: HALOGENS,
     byId: BY_ID,
     get: function (id) { return BY_ID[id] || null; },
     precipitates: PRECIPITATES,
