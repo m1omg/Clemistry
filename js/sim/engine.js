@@ -31,6 +31,7 @@
   var AMBIENT_K = 298.15;
   var MAX_FLAME_K = 3500;
   var WATER_MOLAR_VOLUME = 0.018;   /* litres per mole */
+  var VESSEL_LITRES = 2.0;          /* the beaker itself */
 
   /* Aqueous ion and usual oxidation state for each metal. */
   var METAL_IONS = {
@@ -154,6 +155,20 @@
 
   Vessel.prototype.waterLitres = function () {
     return this.moles('water') * WATER_MOLAR_VOLUME;
+  };
+
+  /* Everything liquid in the beaker, water or not. The solution chemistry runs
+   * on the water alone — that is what the concentrations mean — but a beaker
+   * holding nothing but bromine is not empty, and has to be drawn. */
+  Vessel.prototype.liquidLitres = function () {
+    var total = this.waterLitres(), self = this;
+    Object.keys(this.amounts).forEach(function (id) {
+      if (id === 'water') return;
+      var sp = Sp.get(id);
+      if (!sp || sp.state !== 'l' || !sp.density) return;
+      total += self.amounts[id] * massOf(id) / sp.density / 1000;
+    });
+    return total;
   };
 
   /* Molar concentration of a dissolved species. */
@@ -868,6 +883,7 @@
       TC: this.T - 273.15,
       pH: this.pH,
       volume: this.waterLitres(),
+      liquidVolume: this.liquidLitres(),
       gasMoles: contents.reduce(function (s, c) {
         return s + (c.species && c.species.state === 'g' ? c.moles : 0);
       }, 0),
@@ -875,7 +891,52 @@
         return s + (c.species && c.species.state === 's' ? c.moles : 0);
       }, 0),
       solutionColour: this.solutionColour(contents),
+      gas: this.gasState(contents),
       discovered: this.discovered
+    };
+  };
+
+  /* What the space above the liquid actually looks like.
+   *
+   * A gas fills its container, so the headspace is always full of whatever gas
+   * is present; what changes with the amount is how deeply it is coloured.
+   * Beer–Lambert says the absorbance goes with the concentration, so the
+   * opacity is 1 - exp(-c/c₀): a whiff of chlorine is barely tinted, a beaker
+   * full of it is solidly yellow-green. Colourless gases still show, but only
+   * as the faint shimmer of something moving in the light. */
+  Vessel.prototype.gasState = function (contents) {
+    var headspace = Math.max(0.15, VESSEL_LITRES - this.liquidLitres());
+    var moles = 0, colouredMoles = 0;
+    var r = 0, g = 0, b = 0;
+    var dominant = null;
+
+    contents.forEach(function (c) {
+      if (!c.species || c.species.state !== 'g') return;
+      moles += c.moles;
+      if (!dominant || c.moles > dominant.moles) dominant = c;
+      if (c.species.color) {
+        var rgb = hexToRgb(c.species.color);
+        r += rgb[0] * c.moles; g += rgb[1] * c.moles; b += rgb[2] * c.moles;
+        colouredMoles += c.moles;
+      }
+    });
+    if (moles < 1e-6) return null;
+
+    /* Volume the gas would occupy at the vessel's temperature and 1 atm. */
+    var volume = moles * R_GAS * this.T / 101325 * 1000;
+
+    return {
+      moles: moles,
+      volume: volume,
+      dominant: dominant ? dominant.species : null,
+      colour: colouredMoles > 0
+        ? { r: r / colouredMoles, g: g / colouredMoles, b: b / colouredMoles }
+        : null,
+      /* 0.045 mol/L is roughly a beaker of chlorine at 1 atm — full colour. */
+      opacity: colouredMoles > 0 ? 1 - Math.exp(-(colouredMoles / headspace) / 0.045) : 0,
+      haze: 1 - Math.exp(-(moles / headspace) / 0.5),
+      /* More gas than the beaker holds has to go somewhere. */
+      overflowing: volume > headspace * 1.05
     };
   };
 
@@ -891,15 +952,22 @@
     return m;
   }
 
-  /* Blend the colours of everything dissolved, weighted by concentration. */
+  /* Blend the colours of everything dissolved, weighted by concentration, and
+   * of any liquid present, weighted by how much of the beaker it accounts for. */
   Vessel.prototype.solutionColour = function (contents) {
-    var volume = this.waterLitres();
+    var volume = this.liquidLitres();
     if (volume < 1e-6) return null;
     var r = 0, g = 0, b = 0, weight = 0;
     contents.forEach(function (c) {
       if (!c.species || !c.species.color) return;
-      if (c.species.state !== 'aq' && c.species.cat !== 'ion') return;
-      var strength = Math.min(1, c.conc / 0.5);
+      var strength;
+      if (c.species.state === 'aq' || c.species.cat === 'ion') {
+        strength = Math.min(1, c.conc / 0.5);
+      } else if (c.species.state === 'l' && c.species.density && c.id !== 'water') {
+        strength = Math.min(1, (c.grams / c.species.density / 1000) / volume);
+      } else {
+        return;
+      }
       var rgb = hexToRgb(c.species.color);
       r += rgb[0] * strength; g += rgb[1] * strength; b += rgb[2] * strength;
       weight += strength;
