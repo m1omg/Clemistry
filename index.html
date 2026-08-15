@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Clemistry — a chemistry sandbox</title>
 <link rel="stylesheet" href="css/app.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚗️</text></svg>">
@@ -78,6 +78,7 @@
       <div class="gauge">
         <span class="gauge-label">Gas evolved</span>
         <strong id="gauge-gas">0.00 mol</strong>
+        <span class="gauge-sub" id="gauge-gas-sub"></span>
       </div>
     </div>
 
@@ -150,6 +151,24 @@
     </div>
   </aside>
 </main>
+
+<!-- ------------------------------------------------- small-screen switch -- -->
+<nav class="viewnav" id="viewnav">
+  <button class="viewnav-btn" data-view-btn="shelf">
+    <span class="viewnav-label">Shelf</span>
+    <span class="viewnav-sub" id="nav-sub-shelf">substances</span>
+  </button>
+  <button class="viewnav-btn" data-view-btn="bench">
+    <span class="viewnav-label">Bench</span>
+    <span class="viewnav-sub" id="nav-sub-bench">25 °C</span>
+  </button>
+  <button class="viewnav-btn" data-view-btn="info">
+    <span class="viewnav-label">Molecule</span>
+    <span class="viewnav-sub" id="nav-sub-info">—</span>
+  </button>
+</nav>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <!-- ------------------------------------------------------------- dialogs -- -->
 <div id="help-modal" class="modal hidden">

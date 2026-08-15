@@ -58,7 +58,45 @@
       label = amountLabel(sp) + ' of ' + conc + ' M solution (' + label + ' of solute)';
     }
     vessel.add(sp.id, amount.moles, { water: amount.water, label: label });
+    /* Whatever just went in is what you want to look at. */
+    select(sp.id, true);
+    /* On a small screen the bench is a different view, so say what went in —
+     * otherwise a tap on "+" looks like nothing happened at all. */
+    toast(sp.name + ' — ' + amountLabel(sp) + ' added', 'bench');
     refreshAll();
+  }
+
+  /* ==================================================== small screens ==== */
+
+  /* One panel at a time below 1024px; the bar at the bottom does the switching.
+   * The attribute is set on every screen size and simply has no effect on a
+   * layout wide enough to show all three panels at once. */
+  function setView(name) {
+    document.body.setAttribute('data-view', name);
+    $$('[data-view-btn]').forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-view-btn') === name);
+    });
+    /* A canvas measures zero while its panel is hidden, so both need resizing
+     * the moment one comes back into view. */
+    requestAnimationFrame(function () {
+      viewer.resize();
+      vesselView.resize();
+    });
+  }
+
+  var toastTimer = null;
+  function toast(message, jumpTo) {
+    var el = $('#toast');
+    el.textContent = message;
+    el.classList.add('show');
+    el.onclick = jumpTo ? function () { setView(jumpTo); hideToast(); } : null;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, 2600);
+  }
+
+  function hideToast() {
+    clearTimeout(toastTimer);
+    $('#toast').classList.remove('show');
   }
 
   /* =========================================================== shelf ==== */
@@ -106,6 +144,7 @@
     list.forEach(function (sp) {
       var row = document.createElement('div');
       row.className = 'shelf-item' + (sp.id === selectedId ? ' selected' : '');
+      row.setAttribute('data-species', sp.id);
 
       var swatch = document.createElement('span');
       swatch.className = 'swatch';
@@ -121,7 +160,8 @@
       var add = document.createElement('button');
       add.className = 'add-btn';
       add.textContent = '+';
-      add.title = 'Add ' + amountLabel(sp) + ' of ' + sp.name;
+      add.setAttribute('data-add', sp.id);
+      add.title = addTitle(sp);
       add.addEventListener('click', function (ev) {
         ev.stopPropagation();
         addToVessel(sp);
@@ -135,6 +175,28 @@
     });
   }
 
+  function addTitle(sp) { return 'Add ' + amountLabel(sp) + ' of ' + sp.name; }
+
+  /* The "+" buttons quote the current amount, so they have to follow it — but
+   * rebuilding the shelf to do that would be a trap. Changing the amount and
+   * then reaching for "+" fires the input's change event on blur, and if that
+   * replaces the row the button is gone between press and release: the tap is
+   * swallowed and the reagent never goes in. Retitle them where they stand. */
+  function refreshAddTitles() {
+    $$('#shelf-list .add-btn').forEach(function (b) {
+      var sp = Sp.get(b.getAttribute('data-add'));
+      if (sp) b.title = addTitle(sp);
+    });
+  }
+
+  /* Same reasoning for the highlight: rebuilding the list to move it would
+   * throw you back to the top of the shelf every time you picked something. */
+  function markSelected() {
+    $$('#shelf-list .shelf-item').forEach(function (row) {
+      row.classList.toggle('selected', row.getAttribute('data-species') === selectedId);
+    });
+  }
+
   function fallbackColour(sp) {
     try {
       var mol = St.build(sp.smiles);
@@ -145,14 +207,15 @@
 
   /* ======================================================== selection ==== */
 
-  function select(id) {
+  function select(id, keepTab) {
     selectedId = id;
     var sp = Sp.get(id);
     viewer.setSpecies(sp);
     $('#viewer-badge').textContent = sp ? sp.formula : '';
-    renderShelf();
+    $('#nav-sub-info').textContent = sp ? sp.formula : '—';
+    markSelected();
     renderSpeciesInfo(sp);
-    showInfoTab('info');
+    if (!keepTab) showInfoTab('info');
   }
 
   function renderSpeciesInfo(sp) {
@@ -409,6 +472,18 @@
 
     $('#gauge-volume').textContent = snapshot.volume.toFixed(2) + ' L';
     $('#gauge-gas').textContent = snapshot.gasMoles.toFixed(2) + ' mol';
+
+    /* Moles alone say nothing about what you are looking at: name the gas and
+     * the space it takes up. */
+    var gas = snapshot.gas;
+    $('#gauge-gas-sub').textContent = gas
+      ? gas.volume.toFixed(1) + ' L' +
+        (gas.dominant ? ' · ' + gas.dominant.formula : '') +
+        (gas.overflowing ? ' · overflowing' : '')
+      : '';
+
+    $('#nav-sub-bench').textContent = snapshot.TC.toFixed(0) + ' °C' +
+      (gas && gas.dominant ? ' · ' + gas.dominant.formula : '');
   }
 
   function renderLog() {
@@ -487,6 +562,10 @@
   }
 
   function bindUI() {
+    $$('[data-view-btn]').forEach(function (b) {
+      b.addEventListener('click', function () { setView(b.getAttribute('data-view-btn')); });
+    });
+
     $('#search').addEventListener('input', function (e) {
       searchTerm = e.target.value.trim();
       renderShelf();
@@ -531,9 +610,9 @@
 
     /* Keep the "+" tooltips in step with the amount control. */
     ['#amount', '#amount-unit'].forEach(function (sel) {
-      $(sel).addEventListener('change', renderShelf);
+      $(sel).addEventListener('change', refreshAddTitles);
     });
-    $('#amount').addEventListener('input', renderShelf);
+    $('#amount').addEventListener('input', refreshAddTitles);
 
     $('#btn-clear').addEventListener('click', function () {
       vessel.clear();
@@ -568,6 +647,9 @@
       viewer.resize();
       vesselView.resize();
     });
+    window.addEventListener('orientationchange', function () {
+      setTimeout(function () { viewer.resize(); vesselView.resize(); }, 250);
+    });
   }
 
   function toggleButton(sel, onChange) {
@@ -594,6 +676,7 @@
     renderShelf();
     buildPeriodicTable();
     bindUI();
+    setView('shelf');
 
     viewer.resize();
     vesselView.resize();

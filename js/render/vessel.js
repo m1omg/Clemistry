@@ -57,11 +57,18 @@
 
   VesselView.prototype.liquidRect = function () {
     var s = this.snapshot;
-    var beakerW = Math.min(this.w * 0.52, 210);
-    var beakerH = Math.min(this.h * 0.62, 240);
+    /* The beaker grows with the canvas rather than sitting at a fixed size in
+     * the middle of it — a tall phone or tablet canvas would otherwise show a
+     * postage stamp adrift in the dark. */
+    /* Reserve room underneath for the volume and gas labels. Placing the beaker
+     * at a fixed fraction of the height drew them off the bottom of a short
+     * canvas, which is exactly what a phone gives us. */
+    var footer = (s && s.gas) ? 42 : 26;
+    var beakerH = Math.min(this.h * 0.62, 330, Math.max(60, this.h - footer - 8));
+    var beakerW = Math.min(this.w * 0.52, beakerH * 0.9);
     var x = (this.w - beakerW) / 2;
-    var y = this.h * 0.80 - beakerH;
-    var volume = s ? s.volume : 0;
+    var y = Math.max(4, this.h - footer - beakerH);
+    var volume = s ? (s.liquidVolume !== undefined ? s.liquidVolume : s.volume) : 0;
     var fill = Math.max(0, Math.min(0.88, volume / 1.6));
     return {
       x: x, y: y, w: beakerW, h: beakerH,
@@ -200,8 +207,10 @@
     this._drawBench(ctx, r, h);
     if (this.glow > 0.02) this._drawGlow(ctx, r);
     this._drawLiquid(ctx, r, s);
+    this._drawGas(ctx, r, s);
     this._drawParticles(ctx, r);
     this._drawBeaker(ctx, r);
+    if (s && s.gas && s.gas.overflowing) this._drawFumes(ctx, r, s.gas);
     if (this.flame > 0.02) this._drawFlame(ctx, r);
     if (this.smoke > 0.02) this._drawSmoke(ctx, r);
     this._drawReadout(ctx, r, s);
@@ -290,6 +299,83 @@
         ctx.arc(fx, fy, 3 + Math.random() * 6, 0, Math.PI * 2);
         ctx.fill();
       }
+    }
+    ctx.restore();
+  };
+
+  function rgba(c, a) {
+    return 'rgba(' + Math.round(c.r) + ',' + Math.round(c.g) + ',' + Math.round(c.b) + ',' +
+      Math.max(0, Math.min(1, a)).toFixed(3) + ')';
+  }
+
+  /* The gas standing in the beaker. It fills everything above the liquid — the
+   * amount shows as depth of colour, not as a level. */
+  VesselView.prototype._drawGas = function (ctx, r, s) {
+    var gas = s && s.gas;
+    if (!gas) return;
+
+    var colour = gas.colour || { r: 214, g: 228, b: 244 };
+    /* Even a beaker packed with chlorine is something you can see through. */
+    var alpha = gas.colour ? Math.min(0.62, gas.opacity) : gas.haze * 0.2;
+    if (alpha < 0.006) return;
+
+    var top = r.y + 2;
+    var bottom = Math.min(r.levelY, r.y + r.h - 4);
+    var height = bottom - top;
+    if (height < 4) return;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(r.x + 3, r.y, r.w - 6, r.h - 4);
+    ctx.clip();
+
+    /* Denser toward the bottom: most of these gases are heavier than air. */
+    var grad = ctx.createLinearGradient(0, top, 0, bottom);
+    grad.addColorStop(0, rgba(colour, alpha * 0.5));
+    grad.addColorStop(1, rgba(colour, alpha));
+    ctx.fillStyle = grad;
+    ctx.fillRect(r.x + 3, top, r.w - 6, height);
+
+    /* Slow convection, so it reads as a gas rather than a flat wash. */
+    ctx.globalCompositeOperation = 'lighter';
+    for (var i = 0; i < 7; i++) {
+      var t = this.time * 0.34 + i * 1.7;
+      var x = r.x + r.w * (0.5 + 0.33 * Math.sin(t * 0.8 + i));
+      var y = top + height * (0.5 + 0.4 * Math.sin(t * 0.53 + i * 2.1));
+      var rad = Math.max(5, Math.min(r.w, height) * (0.26 + 0.11 * Math.sin(t + i)));
+      var swirl = ctx.createRadialGradient(x, y, 0, x, y, rad);
+      swirl.addColorStop(0, rgba(colour, alpha * 0.12));
+      swirl.addColorStop(1, rgba(colour, 0));
+      ctx.fillStyle = swirl;
+      ctx.beginPath();
+      ctx.arc(x, y, rad, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  };
+
+  /* More gas than the beaker holds spills over the rim. */
+  VesselView.prototype._drawFumes = function (ctx, r, gas) {
+    var colour = gas.colour || { r: 214, g: 228, b: 244 };
+    var alpha = (gas.colour ? Math.min(0.62, gas.opacity) : gas.haze * 0.2) * 0.42;
+    if (alpha < 0.004) return;
+
+    ctx.save();
+    for (var i = 0; i < 12; i++) {
+      var t = this.time * 0.5 + i * 0.62;
+      var climb = (t % 3) / 3;
+      var side = i % 2 ? 1 : -1;
+      /* Heavier than air, so it rolls over the lip and falls down the outside. */
+      var x = r.x + r.w * (0.5 + side * (0.44 + climb * 0.30)) + Math.sin(t * 1.3) * 5;
+      var y = r.y + 4 + Math.sin(climb * Math.PI) * -14 + climb * r.h * 0.30;
+      var rad = 8 + climb * 20;
+      var puff = ctx.createRadialGradient(x, y, 0, x, y, rad);
+      puff.addColorStop(0, rgba(colour, alpha * (1 - climb)));
+      puff.addColorStop(1, rgba(colour, 0));
+      ctx.fillStyle = puff;
+      ctx.beginPath();
+      ctx.arc(x, y, rad, 0, Math.PI * 2);
+      ctx.fill();
     }
     ctx.restore();
   };
@@ -407,8 +493,21 @@
     ctx.font = '11px ui-monospace, SFMono-Regular, Menlo, monospace';
     ctx.fillStyle = 'rgba(190,205,228,0.75)';
     ctx.textAlign = 'center';
-    var label = s.volume > 0.005 ? (s.volume.toFixed(2) + ' L') : 'dry';
+    var litres = s.liquidVolume !== undefined ? s.liquidVolume : s.volume;
+    var label = litres > 0.005 ? (litres.toFixed(2) + ' L') : 'dry';
     ctx.fillText(label, r.x + r.w / 2, r.y + r.h + 18);
+
+    /* Name the gas standing in the beaker — colour alone cannot do it, and half
+     * of them have no colour at all. */
+    if (s.gas) {
+      var gas = s.gas;
+      var name = (gas.dominant ? gas.dominant.formula + ' · ' : '') +
+        gas.volume.toFixed(1) + ' L gas';
+      ctx.fillStyle = gas.colour
+        ? rgba(gas.colour, 0.55 + 0.4 * gas.opacity)
+        : 'rgba(190,205,228,0.6)';
+      ctx.fillText(name, r.x + r.w / 2, r.y + r.h + 33);
+    }
     ctx.restore();
   };
 

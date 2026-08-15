@@ -25,6 +25,9 @@
 html, body {
   margin: 0;
   height: 100%;
+  /* A phone or tablet browser collapses its toolbar as you scroll, and 100%
+     measures against the taller viewport; dvh follows the real one. */
+  height: 100dvh;
   background: var(--bg);
   color: var(--text);
   font-family: var(--sans);
@@ -391,6 +394,16 @@ h1, h2, h3 { margin: 0; font-weight: 620; letter-spacing: -0.01em; }
   font-weight: 600;
 }
 
+.gauge-sub {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .ph-bar {
   position: relative;
   height: 4px;
@@ -728,6 +741,74 @@ h1, h2, h3 { margin: 0; font-weight: 620; letter-spacing: -0.01em; }
 .modal-card strong { color: var(--text); }
 .modal-card .btn { margin-top: 12px; }
 
+/* -------------------------------------------------------- view switcher -- */
+
+/* Shown only on a small screen, where one panel at a time is all that fits. */
+.viewnav {
+  display: none;
+  flex: 0 0 auto;
+  background: linear-gradient(180deg, #121826, #0b0f18);
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.viewnav-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 9px 4px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-dim);
+  background: transparent;
+  border: 0;
+  border-top: 2px solid transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.viewnav-btn.active {
+  color: var(--accent);
+  border-top-color: var(--accent);
+  background: rgba(79, 195, 247, 0.08);
+}
+
+.viewnav-sub {
+  max-width: 100%;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --------------------------------------------------------------- toast -- */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  transform: translate(-50%, 10px);
+  max-width: min(88vw, 430px);
+  padding: 10px 15px;
+  font-size: 13px;
+  color: var(--text);
+  background: rgba(17, 23, 35, 0.96);
+  border: 1px solid var(--accent-dim);
+  border-radius: 22px;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 60;
+  transition: opacity .18s, transform .18s;
+}
+
+.toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+
 /* ------------------------------------------------------------ scrollbars -- */
 
 ::-webkit-scrollbar { width: 9px; height: 9px; }
@@ -735,89 +816,134 @@ h1, h2, h3 { margin: 0; font-weight: 620; letter-spacing: -0.01em; }
 ::-webkit-scrollbar-thumb { background: #232c3b; border-radius: 5px; }
 ::-webkit-scrollbar-thumb:hover { background: #2e3a4d; }
 
+/* Every scrolling region keeps its momentum to itself, so a flick inside the
+   shelf never drags the page behind it. */
+.shelf-list, .contents-list, .info-body, .element-detail, .periodic, .modal-card {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
 /* ------------------------------------------------------------ responsive -- */
 
 @media (max-width: 1180px) {
   .layout { grid-template-columns: 260px minmax(0, 1fr) 300px; }
 }
 
-/* On a phone the three panels stack and the page itself scrolls. The panels
- * must therefore grow to fit their contents: with a fixed row height and
- * overflow hidden, a vessel holding more than a couple of species had the rest
- * of the list clipped away with no way to scroll to it. */
-@media (max-width: 960px) {
-  /* The desktop layout pins the page to the viewport and scrolls inside the
-   * panels. On a phone the document itself has to scroll, so the height cap
-   * comes off and the panels are free to be as tall as their contents. */
-  html, body {
-    height: auto;
-    min-height: 100%;
-    overflow: visible;
-  }
-
-  body { display: block; }
+/* Tablets and phones. Three columns cannot be read side by side and stacking
+   them turns the bench into a scroll hunt, so the screen shows one panel at a
+   time and the bar at the bottom switches between them. Nothing scrolls the
+   page itself; each panel scrolls inside its own frame. */
+/* A tablet in landscape is wide enough for three columns on paper and much too
+   cramped for them in practice, so a coarse pointer moves the cut upward. */
+@media (max-width: 1023px), (pointer: coarse) and (max-width: 1200px) {
+  .topbar { padding: 8px 12px; gap: 10px; }
+  .brand p { display: none; }
+  .brand h1 { font-size: 16px; }
+  .brand-mark { font-size: 22px; }
+  .topbar-actions { flex: 0 0 auto; }
 
   .layout {
-    grid-template-columns: 1fr;
-    grid-auto-rows: auto;
-    min-height: 0;
+    display: block;
+    position: relative;
+    padding: 0;
+    gap: 0;
   }
 
-  /* min-height 0 plus auto rows lets each panel take exactly the height its
-   * contents need, so nothing is cut off. The panels keep their own overflow
-   * clipping, which is what stops the canvases spilling over their neighbours. */
-  .panel { min-height: 0; }
-
-  /* The beaker gives up some height so the vessel contents sit closer to the
-   * top of the screen. */
-  #vessel-canvas {
-    flex: 0 0 auto;
-    height: 40vw;
-    min-height: 150px;
-    max-height: 230px;
-    order: 1;
+  .layout > .panel {
+    display: none;
+    height: 100%;
+    border: 0;
+    border-radius: 0;
   }
 
-  /* Put what is in the vessel directly under the beaker, ahead of the
-   * controls — it is the thing you are actually watching. */
-  .gauges { grid-template-columns: repeat(2, 1fr); order: 2; }
-  .contents { order: 3; }
-  .controls { order: 4; border-top: 1px solid var(--line); }
+  body[data-view="shelf"] .shelf,
+  body[data-view="bench"] .bench,
+  body[data-view="info"] .inspector { display: flex; }
 
-  /* One scrolling row of filters rather than three wrapped ones. */
-  .chips {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 6px;
-    scrollbar-width: none;
-  }
-  .chips::-webkit-scrollbar { display: none; }
-  .chip { flex: 0 0 auto; }
+  .viewnav { display: flex; }
 
-  /* Show every species; the page scrolls rather than the list. */
-  .contents { max-height: none; }
-  .contents-list { max-height: none; }
+  .toast { bottom: calc(env(safe-area-inset-bottom, 0px) + 78px); }
 
-  /* Keep the shelf from swallowing the whole first screen. */
-  .shelf-list { max-height: 40vh; }
-  .periodic { padding: 8px 4px; }
+  #vessel-canvas { min-height: 190px; }
+  /* A tall screen has room for more than two lines of the vessel list. */
+  .contents { max-height: 42%; }
+  #viewer-canvas { height: 34vh; min-height: 190px; max-height: 330px; }
+
+  .modal-card { max-height: 88vh; padding: 18px 18px 22px; }
 }
 
-/* Narrow phones: tighten the vessel rows so more of them fit on a screen. */
-@media (max-width: 480px) {
-  .topbar { padding: 8px 12px; }
-  .brand p { display: none; }
-  .layout { gap: 8px; padding: 8px; }
+/* Touch. Fingers need targets a mouse does not, and anything under about 40px
+   is a coin toss. Inputs go to 16px because anything smaller makes iOS zoom
+   the whole page the moment you tap them. */
+@media (pointer: coarse) {
+  button, .chip, .pt-cell, .shelf-item, .content-row, label { touch-action: manipulation; }
 
-  .content-row { gap: 6px; padding: 4px; }
-  .content-formula { min-width: 0; font-size: 12px; }
-  .content-name {
-    flex: 1 1 auto;
-    font-size: 11px;
+  .btn { padding: 10px 14px; font-size: 13px; }
+  .tab { padding: 13px 6px; font-size: 13.5px; }
+  .chip { padding: 8px 13px; font-size: 12.5px; }
+
+  .shelf-item { padding: 10px 8px; gap: 11px; }
+  .shelf-name { font-size: 14px; }
+  .shelf-formula { font-size: 12px; }
+  .add-btn { width: 40px; height: 40px; font-size: 21px; }
+
+  .content-row { padding: 10px 6px; }
+  .remove-btn { width: 32px; height: 32px; font-size: 17px; }
+
+  #search, .amount-row input, .amount-row select { font-size: 16px; padding: 10px; }
+  .amount-row { gap: 8px; }
+  .amount-row input { width: 84px; }
+  .amount-row label { font-size: 13px; }
+
+  .control-row label { font-size: 13px; }
+  #burner { height: 32px; }
+
+  .seg-btn { padding: 11px 4px; font-size: 12.5px; }
+  .viewer-toggles { gap: 10px 18px; font-size: 13px; }
+  .viewer-toggles input { width: 18px; height: 18px; }
+
+  .periodic { grid-template-columns: repeat(18, minmax(28px, 1fr)); }
+  .pt-cell { font-size: 11px; }
+  .pt-cell:hover { transform: none; }
+
+  .gauge { padding: 9px 10px; }
+}
+
+/* A phone in portrait: the gauges will not sit four abreast. */
+@media (max-width: 560px) {
+  .gauges { grid-template-columns: repeat(2, 1fr); }
+  .topbar h1 { font-size: 15px; }
+  .btn { padding: 8px 10px; font-size: 12px; }
+}
+
+/* Small or short screens. The bench has to fit a beaker, four gauges, the
+   controls and the vessel list into very little height, and a fixed share for
+   the list leaves room for barely one row. Shrink the beaker and let the list
+   take whatever is left over, scrolling inside itself. */
+@media (max-width: 480px), (max-height: 660px) {
+  #vessel-canvas {
+    flex: 0 0 auto;
+    height: 30vh;
+    min-height: 110px;
+    max-height: 155px;
   }
-  .content-amount { font-size: 11.5px; }
-  .content-amount em { font-size: 9.5px; }
 
-  .control-row label { min-width: 0; }
-  .toggles .btn { flex: 1 1 auto; }
+  .contents {
+    flex: 1 1 auto;
+    max-height: none;
+    min-height: 108px;
+  }
+
+  /* Trim the furniture around the list rather than the list itself. */
+  .gauge { padding: 5px 8px; }
+  .gauge-label { font-size: 9px; letter-spacing: .04em; }
+  .gauge strong { font-size: 13px; }
+
+  .controls { padding: 6px 10px; }
+  .control-row + .control-row { margin-top: 6px; }
+  .toggles { gap: 5px; }
+  .toggles .btn { flex: 1 1 auto; padding: 8px 10px; }
+
+  /* Still a comfortable touch target, but two more rows fit on screen. */
+  .content-row { padding: 7px 6px; }
 }
