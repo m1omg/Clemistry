@@ -444,8 +444,8 @@ h1, h2, h3 { margin: 0; font-weight: 620; letter-spacing: -0.01em; }
 .toggles { flex-wrap: wrap; gap: 6px; }
 
 .contents {
-  flex: 0 0 auto;
-  max-height: 32%;
+  flex: 0 1 auto;
+  max-height: 42%;
   display: flex;
   flex-direction: column;
   min-height: 92px;
@@ -741,12 +741,83 @@ h1, h2, h3 { margin: 0; font-weight: 620; letter-spacing: -0.01em; }
   .layout { grid-template-columns: 260px minmax(0, 1fr) 300px; }
 }
 
+/* On a phone the three panels stack and the page itself scrolls. The panels
+ * must therefore grow to fit their contents: with a fixed row height and
+ * overflow hidden, a vessel holding more than a couple of species had the rest
+ * of the list clipped away with no way to scroll to it. */
 @media (max-width: 960px) {
-  body { overflow: auto; }
+  /* The desktop layout pins the page to the viewport and scrolls inside the
+   * panels. On a phone the document itself has to scroll, so the height cap
+   * comes off and the panels are free to be as tall as their contents. */
+  html, body {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+
+  body { display: block; }
+
   .layout {
     grid-template-columns: 1fr;
-    grid-auto-rows: minmax(320px, auto);
+    grid-auto-rows: auto;
+    min-height: 0;
   }
-  .panel { min-height: 320px; }
+
+  /* min-height 0 plus auto rows lets each panel take exactly the height its
+   * contents need, so nothing is cut off. The panels keep their own overflow
+   * clipping, which is what stops the canvases spilling over their neighbours. */
+  .panel { min-height: 0; }
+
+  /* The beaker gives up some height so the vessel contents sit closer to the
+   * top of the screen. */
+  #vessel-canvas {
+    flex: 0 0 auto;
+    height: 40vw;
+    min-height: 150px;
+    max-height: 230px;
+    order: 1;
+  }
+
+  /* Put what is in the vessel directly under the beaker, ahead of the
+   * controls — it is the thing you are actually watching. */
+  .gauges { grid-template-columns: repeat(2, 1fr); order: 2; }
+  .contents { order: 3; }
+  .controls { order: 4; border-top: 1px solid var(--line); }
+
+  /* One scrolling row of filters rather than three wrapped ones. */
+  .chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scrollbar-width: none;
+  }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { flex: 0 0 auto; }
+
+  /* Show every species; the page scrolls rather than the list. */
   .contents { max-height: none; }
+  .contents-list { max-height: none; }
+
+  /* Keep the shelf from swallowing the whole first screen. */
+  .shelf-list { max-height: 40vh; }
+  .periodic { padding: 8px 4px; }
+}
+
+/* Narrow phones: tighten the vessel rows so more of them fit on a screen. */
+@media (max-width: 480px) {
+  .topbar { padding: 8px 12px; }
+  .brand p { display: none; }
+  .layout { gap: 8px; padding: 8px; }
+
+  .content-row { gap: 6px; padding: 4px; }
+  .content-formula { min-width: 0; font-size: 12px; }
+  .content-name {
+    flex: 1 1 auto;
+    font-size: 11px;
+  }
+  .content-amount { font-size: 11.5px; }
+  .content-amount em { font-size: 9.5px; }
+
+  .control-row label { min-width: 0; }
+  .toggles .btn { flex: 1 1 auto; }
 }
