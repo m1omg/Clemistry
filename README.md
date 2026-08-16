@@ -53,7 +53,7 @@ because they have no molecules to show.
 standard enthalpies of formation of its products and reactants, and that heat is
 distributed according to the molar heat capacities of everything in the vessel.
 Thermite comes out at −851.5 kJ, methane at −802.5 kJ per mole, glucose at
-−2803 kJ per mole against liquid water. All 93 named reactions are verified
+−2803 kJ per mole against liquid water. All 95 named reactions are verified
 balanced for both mass and charge.
 
 **Solutions are modelled as ions.** Soluble compounds dissociate; weak acids and
@@ -71,9 +71,17 @@ properly:
 **Amounts are measured the way you would measure them.** Solids and gases are
 handled in grams, liquids in millilitres; the simulation converts to moles
 underneath, because that is what stoichiometry needs. Gases also report their
-volume at room temperature, and dissolved species their molarity. Pouring a
-bench reagent brings its water with it — 50 mL of 2 M hydrochloric acid is
-0.1 mol of HCl and 3.1 mol of water, and that dilution shows up in the pH.
+volume, and dissolved species their molarity. Each substance starts at the
+quantity you would actually reach for — a litre of water, ten grams of a salt,
+a litre of a gas — so a solvent and a solute stay in a sensible ratio; type your
+own figure and it is used instead.
+
+Pouring a bench reagent brings its water with it: 50 mL of 2 M hydrochloric acid
+is 0.1 mol of HCl and 2.66 mol of water, and that dilution shows up in the pH.
+The strength and the density of each bench solution are stored together on the
+species, so the pair always describes the same liquid. Concentrated sulfuric
+acid and the dilute bench bottle are separate reagents, because they behave
+differently — one chars sugar, the other is an ordinary strong acid.
 
 **Some chemistry needs no reaction table at all.** Precipitation happens
 whenever an ion product passes the solubility product. Metals displace each
@@ -100,7 +108,7 @@ chilling the beaker.
 - Aluminium with iron(III) oxide, then Ignite — thermite at over 2000 °C
 - Sucrose with concentrated sulfuric acid — a black column of carbon
 - Sodium in water, and then potassium in water
-- Barium chloride with sulfuric acid — the standard test for sulfate
+- Barium chloride with dilute sulfuric acid — the standard test for sulfate
 - Water with the current on — hydrogen and oxygen in a 2:1 ratio
 - Fluorine in water — it oxidises the water itself and sets the oxygen free
 - Chlorine with potassium iodide, then iodine with potassium bromide (only one of them reacts)
@@ -114,9 +122,9 @@ index.html
 css/app.css
 js/
   data/elements.js     118 elements: masses, electronegativities, radii, CPK colours
-  data/species.js      194 substances and aqueous ions: thermochemistry, densities
+  data/species.js      195 substances and aqueous ions: thermochemistry, densities
   chem/units.js        moles / grams / millilitres, and bench-solution strengths
-  data/reactions.js    93 named reactions with their conditions
+  data/reactions.js    95 named reactions with their conditions
   chem/structure.js    SMILES parser, kekulization, valence and VSEPR analysis
   chem/geometry.js     3D coordinate generation and relaxation
   render/viewer.js     stick / ball-and-stick / space-filling molecule viewer

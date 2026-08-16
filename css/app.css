@@ -856,6 +856,10 @@ h1, h2, h3 { margin: 0; font-weight: 620; letter-spacing: -0.01em; }
     border-radius: 0;
   }
 
+  /* Until the script sets data-view — and if it never does, because boot threw
+     or scripting is off — fall back to the shelf rather than showing nothing. */
+  body:not([data-view]) .shelf { display: flex; }
+
   body[data-view="shelf"] .shelf,
   body[data-view="bench"] .bench,
   body[data-view="info"] .inspector { display: flex; }
@@ -865,6 +869,15 @@ h1, h2, h3 { margin: 0; font-weight: 620; letter-spacing: -0.01em; }
   .toast { bottom: calc(env(safe-area-inset-bottom, 0px) + 78px); }
 
   #vessel-canvas { min-height: 190px; }
+  /* On a short screen the panel cannot afford a tall canvas: the tab bar and
+     the viewer toggles underneath it were being clipped with nothing to
+     scroll, because the page itself no longer scrolls here. */
+  @media (max-height: 700px) {
+    #vessel-canvas { min-height: 120px; }
+    #viewer-canvas { height: 26vh; min-height: 120px; }
+    .viewer-controls { padding: 6px 10px; }
+    .viewer-toggles { margin-top: 5px; gap: 3px 12px; }
+  }
   /* A tall screen has room for more than two lines of the vessel list. */
   .contents { max-height: 42%; }
   #viewer-canvas { height: 34vh; min-height: 190px; max-height: 330px; }
@@ -920,7 +933,7 @@ h1, h2, h3 { margin: 0; font-weight: 620; letter-spacing: -0.01em; }
    controls and the vessel list into very little height, and a fixed share for
    the list leaves room for barely one row. Shrink the beaker and let the list
    take whatever is left over, scrolling inside itself. */
-@media (max-width: 480px), (max-height: 660px) {
+@media (max-width: 480px), (max-width: 1023px) and (max-height: 660px) {
   #vessel-canvas {
     flex: 0 0 auto;
     height: 30vh;

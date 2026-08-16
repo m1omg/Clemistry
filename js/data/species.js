@@ -183,10 +183,14 @@
   S({ id: 'hcl_g', name: 'Hydrogen chloride', formula: 'HCl', smiles: 'Cl', state: 'g', cat: 'gas',
       dHf: -92.3, cp: 29.1, bp: -85, hazards: ['corrosive', 'toxic'],
       desc: 'A colourless gas that fumes in moist air. Extremely soluble — one litre of water takes up over 400 litres of it.' });
-  S({ id: 'h2so4', name: 'Sulfuric acid', formula: 'H₂SO₄', smiles: 'O=S(=O)(O)O', state: 'l', cat: 'acid',
+  S({ id: 'h2so4', name: 'Sulfuric acid (concentrated)', formula: 'H₂SO₄', smiles: 'O=S(=O)(O)O', state: 'l', cat: 'acid',
       dHf: -814.0, cp: 138.9, mp: 10.3, bp: 337, pKa: -3, strongAcid: true, protons: 2,
       ions: { 'h+': 2, 'so4-2': 1 }, hazards: ['corrosive', 'oxidiser'],
       desc: 'Sulfur sits at the centre of a distorted tetrahedron. Concentrated, it is a dehydrating agent that chars sugar to carbon.' });
+  S({ id: 'h2so4_dil', name: 'Sulfuric acid (dilute)', formula: 'H₂SO₄(aq)', smiles: 'O=S(=O)(O)O',
+      state: 'aq', cat: 'acid', dHf: -909.3, cp: 100, pKa: -3, strongAcid: true, protons: 2,
+      ions: { 'h+': 2, 'so4-2': 1 }, hazards: ['corrosive'],
+      desc: 'The bench bottle. Dilute enough to be an ordinary strong acid, without the dehydrating and oxidising behaviour of the concentrated liquid.' });
   S({ id: 'hno3', name: 'Nitric acid', formula: 'HNO₃', smiles: 'O[N+](=O)[O-]', state: 'l', cat: 'acid',
       dHf: -174.1, cp: 109.9, mp: -42, bp: 83, pKa: -1.4, strongAcid: true,
       ions: { 'h+': 1, 'no3-': 1 }, hazards: ['corrosive', 'oxidiser'],
@@ -202,7 +206,7 @@
       dHf: -699.7, cp: 100, pKa: 6.35, protons: 2, ions: { 'h+': 1, 'hco3-': 1 },
       desc: 'Formed when carbon dioxide dissolves. Unstable — it falls apart back to CO₂ and water as fast as it forms.' });
   S({ id: 'hf', name: 'Hydrofluoric acid', formula: 'HF', smiles: 'F', state: 'aq', cat: 'acid',
-      dHf: -332.6, cp: 100, pKa: 3.17, ions: { 'h+': 1, 'f-': 1 }, hazards: ['corrosive', 'toxic'],
+      dHf: -320.1, cp: 100, pKa: 3.17, ions: { 'h+': 1, 'f-': 1 }, hazards: ['corrosive', 'toxic'],
       desc: 'A weak acid that nonetheless etches glass, and one of the most dangerous reagents in any lab.' });
   S({ id: 'hcn', name: 'Hydrogen cyanide', formula: 'HCN', smiles: 'C#N', state: 'l', cat: 'acid',
       dHf: 108.9, cp: 70.6, bp: 25.6, pKa: 9.21, ions: { 'h+': 1, 'cn-': 1 }, hazards: ['toxic', 'flammable'],
@@ -628,10 +632,14 @@
    * their volume comes from the ideal gas law instead. */
   var DENSITY = {
     water: 1.000, ice: 0.917, h2o2: 1.450, br2: 3.102, hg: 13.534,
-    h2so4: 1.831, hno3: 1.513, hcl: 1.180, hbr: 1.490, hi: 1.700, hf: 1.150,
-    h3po4: 1.685, ch3cooh: 1.049, hcooh: 1.220, citric: 1.665, h2co3: 1.000,
-    h2so3: 1.030, hocl: 1.000, naocl: 1.110, nh4oh: 0.910, cahco32: 1.000,
-    hcn: 0.687, ch3oh: 0.792, c2h5oh: 0.789, propanol: 0.786, glycol: 1.113,
+    h2so4: 1.831, ch3cooh: 1.049, hcooh: 1.220, citric: 1.665,
+    /* Bench solutions: the density of the diluted solution you actually pour,
+       to match the molarity in BENCH below. The concentrated-reagent figure
+       would overstate the water each pour carries by 15% or more. */
+    hcl: 1.033, hno3: 1.063, hbr: 1.077, hi: 1.120, hf: 1.018,
+    h3po4: 1.052, hcn: 0.999, h2so3: 1.024, hocl: 1.001, h2co3: 1.000,
+    cahco32: 1.004, naocl: 1.037, nh4oh: 0.985, h2so4_dil: 1.060,
+    ch3oh: 0.792, c2h5oh: 0.789, propanol: 0.786, glycol: 1.113,
     acetone: 0.784, benzene: 0.876, toluene: 0.867, ccl4: 1.594, chcl3: 1.489,
     c8h18: 0.703, ethylacetate: 0.902, nitrobenzene: 1.199, nitroglycerin: 1.600,
 
@@ -659,8 +667,17 @@
     naphthalene: 1.140, tnt: 1.654, nan3: 1.846, cac2: 2.220, yeast: 1.000
   };
 
+  /* Molarity of each bench solution. A liquid reagent without an entry here is
+   * the neat substance — concentrated sulfuric acid, ethanol, bromine. */
+  var BENCH = {
+    hcl: 2.0, hno3: 2.0, hbr: 1.0, hi: 1.0, hf: 1.0, h3po4: 1.0,
+    hcn: 1.0, h2so3: 0.5, hocl: 0.1, h2co3: 0.03, cahco32: 0.05,
+    naocl: 0.70, nh4oh: 2.0, h2so4_dil: 1.0
+  };
+
   LIST.forEach(function (sp) {
     if (DENSITY[sp.id] !== undefined) sp.density = DENSITY[sp.id];
+    if (BENCH[sp.id] !== undefined) sp.bench = BENCH[sp.id];
   });
 
   global.Chem.Species = {

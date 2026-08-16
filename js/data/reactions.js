@@ -352,6 +352,15 @@
       effects: ['explosion', 'flame'],
       note: 'Combines explosively in the dark at −250 °C. No other pair of elements is so eager.' });
 
+  R({ id: 'hf-water', name: 'Hydrogen fluoride dissolving', type: 'equilibrium',
+      in: { hf_g: 1, water: 0 }, out: { hf: 1 }, rate: 18, needs: { water: true },
+      note: 'Hydrogen fluoride is extremely soluble. Once dissolved it is hydrofluoric acid — weak as acids go, but it is what makes the pH fall after fluorine has torn into the water.' });
+
+  R({ id: 'hcl-water', name: 'Hydrogen chloride dissolving', type: 'equilibrium',
+      in: { hcl_g: 1, water: 0 }, out: { hcl: 1 }, rate: 20, needs: { water: true },
+      effects: ['smoke'],
+      note: 'One litre of water takes up over four hundred litres of the gas, which is why a bottle of it fumes the moment the air is damp.' });
+
   R({ id: 'cl2-water', name: 'Chlorine in water', type: 'equilibrium',
       in: { cl2: 1, water: 1 }, out: { hcl: 1, hocl: 1 }, rate: 1.2, reversible: true,
       effects: ['colour'],

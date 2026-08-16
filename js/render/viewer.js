@@ -300,6 +300,9 @@
     if (this._raf) return;
     (function loop() {
       self._raf = requestAnimationFrame(loop);
+      /* A canvas inside a display:none panel has no offsetParent. Skip the whole
+       * frame rather than measuring and reallocating a bitmap nobody can see. */
+      if (self.canvas.offsetParent === null) return;
       if (self.autoRotate) self.rotation.y += 0.0045;
       self.draw();
     })();
@@ -323,6 +326,10 @@
   Viewer.prototype.draw = function () {
     var ctx = this.ctx;
     if (!this.cssWidth) this.resize();
+    /* Hidden panel: bail out instead of re-measuring every frame. Easing the
+     * fit toward a zero-sized target also shrank the cached zoom to nothing, so
+     * the molecule bloomed up from a dot each time the view was reopened. */
+    if (!this.cssWidth || !this.cssHeight) return;
     var w = this.cssWidth, h = this.cssHeight;
     ctx.clearRect(0, 0, w, h);
 

@@ -17,6 +17,9 @@
   var Sp = global.Chem.Species;
   var Rx = global.Chem.Reactions;
   var St = global.Chem.Structure;
+  /* units.js is loaded first; binding it here makes the dependency explicit and
+   * fails at load rather than halfway through a simulation tick. */
+  var U = global.Chem.Units;
 
   /* Ions that act as weak acids, keyed by their own pKa. */
   var ION_ACIDS = { 'nh4+': 9.25, 'hco3-': 10.33, 'h2po4-': 7.20 };
@@ -111,9 +114,7 @@
     if (options.water > 0 && id !== 'water') {
       this.amounts.water = (this.amounts.water || 0) + options.water;
     }
-    var U = global.Chem.Units;
-    var label = options.label ||
-      (U ? U.describe(sp, moles).primary : fmt(moles) + ' mol');
+    var label = options.label || U.describe(sp, moles).primary;
     this.emit('add', sp.name + ' — ' + label + ' added', { species: id });
   };
 
@@ -165,8 +166,9 @@
     Object.keys(this.amounts).forEach(function (id) {
       if (id === 'water') return;
       var sp = Sp.get(id);
-      if (!sp || sp.state !== 'l' || !sp.density) return;
-      total += self.amounts[id] * massOf(id) / sp.density / 1000;
+      if (!sp || sp.state !== 'l') return;
+      var mL = U.millilitres(id, self.amounts[id]);
+      if (mL !== null) total += mL / 1000;
     });
     return total;
   };
@@ -518,10 +520,12 @@
     al2o3: { cation: 'al+3', metals: 2, oxygens: 3 }
   };
 
+  var BASIC_OXIDE_IDS = Object.keys(BASIC_OXIDES);
+
   Vessel.prototype._basicOxideAcid = function (dt) {
     if (this.waterLitres() < 1e-6) return;
     var self = this;
-    Object.keys(BASIC_OXIDES).forEach(function (id) {
+    BASIC_OXIDE_IDS.forEach(function (id) {
       var info = BASIC_OXIDES[id];
       var oxide = self.moles(id), h = self.moles('h+');
       if (oxide < 1e-12 || h < 1e-12) return;
@@ -865,6 +869,7 @@
   /* Everything the UI needs to describe the vessel right now. */
   Vessel.prototype.snapshot = function () {
     var self = this;
+    var liquid = this.liquidLitres();
     var contents = Object.keys(this.amounts)
       .filter(function (id) { return self.amounts[id] > 1e-9; })
       .map(function (id) {
@@ -883,15 +888,15 @@
       TC: this.T - 273.15,
       pH: this.pH,
       volume: this.waterLitres(),
-      liquidVolume: this.liquidLitres(),
+      liquidVolume: liquid,
       gasMoles: contents.reduce(function (s, c) {
         return s + (c.species && c.species.state === 'g' ? c.moles : 0);
       }, 0),
       solidMoles: contents.reduce(function (s, c) {
         return s + (c.species && c.species.state === 's' ? c.moles : 0);
       }, 0),
-      solutionColour: this.solutionColour(contents),
-      gas: this.gasState(contents),
+      solutionColour: this.solutionColour(contents, liquid),
+      gas: this.gasState(contents, liquid),
       discovered: this.discovered
     };
   };
@@ -904,8 +909,9 @@
    * opacity is 1 - exp(-c/c₀): a whiff of chlorine is barely tinted, a beaker
    * full of it is solidly yellow-green. Colourless gases still show, but only
    * as the faint shimmer of something moving in the light. */
-  Vessel.prototype.gasState = function (contents) {
-    var headspace = Math.max(0.15, VESSEL_LITRES - this.liquidLitres());
+  Vessel.prototype.gasState = function (contents, liquid) {
+    var headspace = Math.max(0.15, VESSEL_LITRES -
+      (liquid === undefined ? this.liquidLitres() : liquid));
     var moles = 0, colouredMoles = 0;
     var r = 0, g = 0, b = 0;
     var dominant = null;
@@ -923,7 +929,7 @@
     if (moles < 1e-6) return null;
 
     /* Volume the gas would occupy at the vessel's temperature and 1 atm. */
-    var volume = moles * R_GAS * this.T / 101325 * 1000;
+    var volume = U.litresGas(moles, this.T);
 
     return {
       moles: moles,
@@ -940,22 +946,15 @@
     };
   };
 
-  var massCache = {};
-  function massOf(id) {
-    if (massCache[id] !== undefined) return massCache[id];
-    var sp = Sp.get(id);
-    var m = 0;
-    if (sp && !sp.noStructure) {
-      try { m = St.build(sp.smiles).mass; } catch (e) { m = 0; }
-    }
-    massCache[id] = m;
-    return m;
-  }
+  /* Molar mass lives in units.js, which loads first. Keeping a second copy here
+   * meant the drawn liquid level and the millilitres printed beside it could be
+   * computed from two caches that drifted apart. */
+  function massOf(id) { return U.molarMass(id); }
 
   /* Blend the colours of everything dissolved, weighted by concentration, and
    * of any liquid present, weighted by how much of the beaker it accounts for. */
-  Vessel.prototype.solutionColour = function (contents) {
-    var volume = this.liquidLitres();
+  Vessel.prototype.solutionColour = function (contents, liquid) {
+    var volume = liquid === undefined ? this.liquidLitres() : liquid;
     if (volume < 1e-6) return null;
     var r = 0, g = 0, b = 0, weight = 0;
     contents.forEach(function (c) {
@@ -996,6 +995,7 @@
   }
 
   global.Chem.Vessel = Vessel;
+  global.Chem.vesselLitres = VESSEL_LITRES;
   global.Chem.enthalpyOf = enthalpyOf;
   global.Chem.massOf = massOf;
   global.Chem.fmtMoles = fmt;

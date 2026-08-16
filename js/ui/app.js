@@ -18,6 +18,7 @@
   var activeCategory = 'all';
   var searchTerm = '';
   var selectedElement = null;
+  var amountTouched = false;
 
   /* Reagents are shown on the shelf; bare aqueous ions are not — they appear
    * when something dissolves. */
@@ -29,40 +30,51 @@
   /* The amount control: a number plus a unit. "auto" means grams for a solid or
    * a gas and millilitres for a liquid, which is how you would actually measure
    * each of them out. */
-  function readAmount(sp) {
-    var value = parseFloat($('#amount').value);
-    if (!(value > 0)) value = 10;
-    var unit = $('#amount-unit').value;
+  /* Read the amount control once and return everything derived from it, so the
+   * quantity that goes into the beaker and the quantity we tell the user about
+   * can never come from two separate parses. `isFinite` matters: the field
+   * accepts exponent syntax, and `1e999` is Infinity, which passes a bare
+   * `> 0` test and then gives the vessel an infinite heat capacity. */
+  function currentAmount(sp, unitOverride) {
+    /* Until the user types a quantity of their own, each substance is measured
+     * out the way you normally would measure it — a litre of water, ten grams
+     * of a salt, a litre of a gas — rather than by one global number that suits
+     * none of them. This applies whether or not the row was selected first. */
+    var d = U.defaultAmount(sp);
+    var value = amountTouched ? parseFloat($('#amount').value) : d.value;
+    if (!(isFinite(value) && value > 0)) value = d.value;
+    var unit = unitOverride || (amountTouched ? $('#amount-unit').value : d.unit);
     if (unit === 'auto') unit = U.inputUnit(sp);
-    return U.toMoles(sp, value, unit);
+    var moles = U.toMoles(sp, value, unit);
+    return {
+      value: value, unit: unit,
+      moles: moles.moles, water: moles.water,
+      label: value + ' ' + unit
+    };
   }
 
-  function amountLabel(sp) {
-    var value = parseFloat($('#amount').value);
-    if (!(value > 0)) value = 10;
-    var unit = $('#amount-unit').value;
-    if (unit === 'auto') unit = U.inputUnit(sp);
-    return value + ' ' + unit;
-  }
-
-  function addToVessel(sp) {
-    var amount = readAmount(sp);
+  function addToVessel(sp, unitOverride) {
+    var amount = currentAmount(sp, unitOverride);
     if (!(amount.moles > 0)) {
-      vessel.emit('add', 'Cannot measure ' + sp.name + ' in those units.');
+      var why = 'Cannot measure ' + sp.name + ' in ' + amount.unit + '.';
+      vessel.emit('add', why);
+      /* The log lives in a panel that is hidden on a phone, so without this the
+       * tap looks like nothing happened at all. */
+      toast(why, 'info');
       refreshAll();
       return;
     }
-    var conc = U.benchConcentration(sp.id);
+    var conc = U.benchConcentration(sp);
     var label = U.describe(sp, amount.moles).primary;
     if (conc) {
-      label = amountLabel(sp) + ' of ' + conc + ' M solution (' + label + ' of solute)';
+      label = amount.label + ' of ' + conc + ' M solution (' + label + ' of solute)';
     }
     vessel.add(sp.id, amount.moles, { water: amount.water, label: label });
     /* Whatever just went in is what you want to look at. */
     select(sp.id, true);
     /* On a small screen the bench is a different view, so say what went in —
      * otherwise a tap on "+" looks like nothing happened at all. */
-    toast(sp.name + ' — ' + amountLabel(sp) + ' added', 'bench');
+    toast(sp.name + ' — ' + amount.label + ' added', 'bench');
     refreshAll();
   }
 
@@ -175,7 +187,7 @@
     });
   }
 
-  function addTitle(sp) { return 'Add ' + amountLabel(sp) + ' of ' + sp.name; }
+  function addTitle(sp) { return 'Add ' + currentAmount(sp).label + ' of ' + sp.name; }
 
   /* The "+" buttons quote the current amount, so they have to follow it — but
    * rebuilding the shelf to do that would be a trap. Changing the amount and
@@ -207,6 +219,17 @@
 
   /* ======================================================== selection ==== */
 
+  /* Offer the amount you would normally measure out for this kind of reagent.
+   * Only when the user has not overridden it themselves, so a typed quantity
+   * survives clicking down the shelf. */
+  function suggestAmount(sp) {
+    if (!sp || amountTouched) return;
+    var d = U.defaultAmount(sp);
+    $('#amount').value = d.value;
+    $('#amount-unit').value = d.unit;
+    refreshAddTitles();
+  }
+
   function select(id, keepTab) {
     selectedId = id;
     var sp = Sp.get(id);
@@ -215,6 +238,7 @@
     $('#nav-sub-info').textContent = sp ? sp.formula : '—';
     markSelected();
     renderSpeciesInfo(sp);
+    suggestAmount(sp);
     if (!keepTab) showInfoTab('info');
   }
 
@@ -400,9 +424,7 @@
     var btn = $('#element-detail [data-add-element]');
     if (btn) {
       btn.addEventListener('click', function () {
-        var sp = Sp.get(btn.getAttribute('data-add-element'));
-        addToVessel(sp);
-        select(sp.id);
+        addToVessel(Sp.get(btn.getAttribute('data-add-element')));
       });
     }
   }
@@ -470,7 +492,7 @@
       marker.style.left = Math.max(0, Math.min(100, (snapshot.pH / 14) * 100)) + '%';
     }
 
-    $('#gauge-volume').textContent = snapshot.volume.toFixed(2) + ' L';
+    $('#gauge-volume').textContent = snapshot.liquidVolume.toFixed(2) + ' L';
     $('#gauge-gas').textContent = snapshot.gasMoles.toFixed(2) + ' mol';
 
     /* Moles alone say nothing about what you are looking at: name the gas and
@@ -603,16 +625,21 @@
 
     $('#btn-water').addEventListener('click', function () {
       var water = Sp.get('water');
-      var amount = U.toMoles(water, 1000, 'mL');
-      vessel.add('water', amount.moles, { label: '1000 mL' });
+      var litre = U.toMoles(water, 1000, 'mL');
+      vessel.add('water', litre.moles, { label: '1000 mL' });
+      toast('Water — 1000 mL added', 'bench');
       refreshAll();
     });
 
     /* Keep the "+" tooltips in step with the amount control. */
-    ['#amount', '#amount-unit'].forEach(function (sel) {
-      $(sel).addEventListener('change', refreshAddTitles);
+    $('#amount').addEventListener('input', function () {
+      amountTouched = true;
+      refreshAddTitles();
     });
-    $('#amount').addEventListener('input', refreshAddTitles);
+    $('#amount-unit').addEventListener('change', function () {
+      amountTouched = true;
+      refreshAddTitles();
+    });
 
     $('#btn-clear').addEventListener('click', function () {
       vessel.clear();

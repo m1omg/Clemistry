@@ -8,6 +8,13 @@
 (function (global) {
   'use strict';
 
+  /* The readout under the beaker: where the first line sits, how far apart the
+   * lines are, and therefore how much height liquidRect has to leave for them.
+   * Both the reservation and the drawing read these, so they cannot drift. */
+  var READOUT_TOP = 18;
+  var READOUT_LINE = 15;
+  var FOOTER_HEIGHT = READOUT_TOP + READOUT_LINE + 9;
+
   function VesselView(canvas) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
@@ -60,16 +67,17 @@
     /* The beaker grows with the canvas rather than sitting at a fixed size in
      * the middle of it — a tall phone or tablet canvas would otherwise show a
      * postage stamp adrift in the dark. */
-    /* Reserve room underneath for the volume and gas labels. Placing the beaker
-     * at a fixed fraction of the height drew them off the bottom of a short
-     * canvas, which is exactly what a phone gives us. */
-    var footer = (s && s.gas) ? 42 : 26;
+    /* Reserve room underneath for the volume and gas labels. The reservation is
+     * the same whether or not there is any gas to name: sizing it from the gas
+     * made the whole beaker, its liquid and its settled precipitate jump 16px
+     * the instant the first bubble appeared. */
+    var footer = FOOTER_HEIGHT;
     var beakerH = Math.min(this.h * 0.62, 330, Math.max(60, this.h - footer - 8));
     var beakerW = Math.min(this.w * 0.52, beakerH * 0.9);
     var x = (this.w - beakerW) / 2;
     var y = Math.max(4, this.h - footer - beakerH);
-    var volume = s ? (s.liquidVolume !== undefined ? s.liquidVolume : s.volume) : 0;
-    var fill = Math.max(0, Math.min(0.88, volume / 1.6));
+    var volume = s ? s.liquidVolume : 0;
+    var fill = Math.max(0, Math.min(0.88, volume / (global.Chem.vesselLitres || 2.0)));
     return {
       x: x, y: y, w: beakerW, h: beakerH,
       levelY: y + beakerH * (1 - fill),
@@ -147,6 +155,10 @@
     if (this._raf) return;
     (function loop(now) {
       self._raf = requestAnimationFrame(loop);
+      /* A canvas inside a display:none panel has no offsetParent. Skip the whole
+       * frame rather than measuring and reallocating a bitmap nobody can see —
+       * on a phone two of the three panels are hidden at all times. */
+      if (self.canvas.offsetParent === null) { last = now; return; }
       var dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       self.step(dt);
@@ -193,6 +205,9 @@
   VesselView.prototype.draw = function () {
     var ctx = this.ctx;
     if (!this.w) this.resize();
+    /* Still nothing? The panel is hidden — stop rather than re-measure and
+     * reallocate the backing store on every frame for a canvas nobody sees. */
+    if (!this.w || !this.h) return;
     var w = this.w, h = this.h;
     ctx.clearRect(0, 0, w, h);
 
@@ -493,9 +508,9 @@
     ctx.font = '11px ui-monospace, SFMono-Regular, Menlo, monospace';
     ctx.fillStyle = 'rgba(190,205,228,0.75)';
     ctx.textAlign = 'center';
-    var litres = s.liquidVolume !== undefined ? s.liquidVolume : s.volume;
+    var litres = s.liquidVolume;
     var label = litres > 0.005 ? (litres.toFixed(2) + ' L') : 'dry';
-    ctx.fillText(label, r.x + r.w / 2, r.y + r.h + 18);
+    ctx.fillText(label, r.x + r.w / 2, r.y + r.h + READOUT_TOP);
 
     /* Name the gas standing in the beaker — colour alone cannot do it, and half
      * of them have no colour at all. */
@@ -506,7 +521,7 @@
       ctx.fillStyle = gas.colour
         ? rgba(gas.colour, 0.55 + 0.4 * gas.opacity)
         : 'rgba(190,205,228,0.6)';
-      ctx.fillText(name, r.x + r.w / 2, r.y + r.h + 33);
+      ctx.fillText(name, r.x + r.w / 2, r.y + r.h + READOUT_TOP + READOUT_LINE);
     }
     ctx.restore();
   };
